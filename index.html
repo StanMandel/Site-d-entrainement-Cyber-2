@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entraînements EPITA</title>
+  <meta name="description" content="Exercices interactifs (QCM et jeux de rapidité) pour réviser les cours EPITA.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+</head>
+<body>
+
+  <header class="entete">
+    <div class="conteneur entete-haut">
+      <button class="onglet-accueil" id="accueil" type="button">🏠 Accueil</button>
+      <label class="recherche">
+        <input id="recherche" type="search" placeholder="Chercher une matière…" autocomplete="off">
+      </label>
+    </div>
+  </header>
+
+  <main class="conteneur vue" id="vue"></main>
+
+  <!-- ============ Données ============ -->
+  <script src="data/cours.js" defer></script>
+
+  <script src="data/cours/anglais-general.js" defer></script>
+  <script src="data/cours/anglais-technique.js" defer></script>
+  <script src="data/cours/virtualisation-conteneurs.js" defer></script>
+  <script src="data/cours/poo-java.js" defer></script>
+  <script src="data/cours/complexite-algorithmique.js" defer></script>
+  <script src="data/cours/systeme-windows.js" defer></script>
+  <script src="data/cours/systeme-windows-attaques.js" defer></script>
+  <script src="data/cours/graphes-matrices.js" defer></script>
+  <script src="data/cours/assembleur.js" defer></script>
+  <script src="data/cours/assembleur-exercices.js" defer></script>
+  <script src="data/cours/electronique-3.js" defer></script>
+  <script src="data/cours/osint.js" defer></script>
+  <script src="data/cours/reseaux-avances.js" defer></script>
+  <script src="data/cours/forensique.js" defer></script>
+  <script src="data/cours/probabilites-discretes.js" defer></script>
+  <script src="data/cours/reverse-engineering.js" defer></script>
+
+  <!-- ============ Moteurs ============ -->
+  <script src="assets/js/utils.js" defer></script>
+  <script src="assets/js/qcm.js" defer></script>
+  <script src="assets/js/jetpunk.js" defer></script>
+  <script src="assets/js/guide.js" defer></script>
+  <script src="assets/js/asm-x86.js" defer></script>
+  <script src="assets/js/mini-c.js" defer></script>
+  <script src="assets/js/verif-code.js" defer></script>
+  <script src="assets/js/code.js" defer></script>
+  <script src="assets/js/terminal.js" defer></script>
+  <script src="assets/js/probleme.js" defer></script>
+  <script src="assets/js/app.js" defer></script>
+
+
+  <!-- SCRIPTS-INSTALLATION-DEBUT : régénérer avec outils/embarquer-installateur.js -->
+  <!-- Source : outils/installer-outils.cmd -->
+  <script type="text/plain" id="installateur-outils-windows">
+@echo off
+setlocal EnableExtensions
+title Installation des outils - Attaques Windows
+echo ============================================================
+echo   Installation des outils d'attaque (Windows)
+echo   nmap, Impacket, NetExec, enum4linux-ng, Responder, PsExec
+echo ============================================================
+echo   A n'utiliser que sur un reseau de test dont vous avez
+echo   l'autorisation. Idealement dans une machine virtuelle.
+echo ============================================================
+echo.
+
+rem --- Droits administrateur obligatoires (winget + exclusion Defender) ---
+net session >nul 2>nul
+if errorlevel 1 (
+  echo [X] Ce script doit etre lance en administrateur.
+  echo     Clic droit sur "installer-outils.cmd" ^> "Executer en tant qu'administrateur",
+  echo     ou ouvrez un terminal admin puis relancez-le.
+  goto :fin
+)
+echo [OK] Droits administrateur confirmes.
+
+rem --- Exclusion Windows Defender ---------------------------------------------
+rem Impacket, NetExec et Responder contiennent des scripts que Defender supprime
+rem comme "virus" (HackTool) pendant l'installation. On exclut les deux dossiers
+rem qui les recoivent. Pour annuler plus tard :
+rem   Remove-MpPreference -ExclusionPath "%LOCALAPPDATA%\pipx"
+rem   Remove-MpPreference -ExclusionPath "%USERPROFILE%\outils-attaques"
+echo [..] Ajout des exclusions Defender (dossiers pipx et outils-attaques)...
+powershell -NoProfile -Command "Add-MpPreference -ExclusionPath '%LOCALAPPDATA%\pipx' -ErrorAction SilentlyContinue; Add-MpPreference -ExclusionPath '%USERPROFILE%\outils-attaques' -ErrorAction SilentlyContinue"
+if errorlevel 1 (
+  echo [!] Exclusion non ajoutee (Defender absent ou protection contre les
+  echo     falsifications active). L'installation peut echouer sur impacket/netexec.
+) else (
+  echo [OK] Exclusions Defender ajoutees.
+)
+
+rem --- winget : gestionnaire de paquets integre a Windows 10/11 ---
+where winget >nul 2>nul
+if errorlevel 1 (
+  echo [X] winget est introuvable.
+  echo     Installez "App Installer" depuis le Microsoft Store puis relancez.
+  echo     https://apps.microsoft.com/detail/9NBLGGH4NNS1
+  goto :fin
+)
+echo [OK] winget detecte.
+
+rem --- nmap ---
+call :assure_cmd nmap "Insecure.Nmap" "nmap"
+
+rem --- Git (necessaire pour cloner Responder et installer NetExec) ---
+call :assure_cmd git "Git.Git" "Git"
+
+rem --- Python 3 (detecte via python puis via le lanceur py) ---
+set "PY="
+python -V >nul 2>nul && set "PY=python"
+if not defined PY ( py -3 -V >nul 2>nul && set "PY=py -3" )
+if not defined PY (
+  echo [..] Installation de Python 3...
+  winget install --id Python.Python.3.12 -e --source winget --accept-package-agreements --accept-source-agreements
+  python -V >nul 2>nul && set "PY=python"
+  if not defined PY ( py -3 -V >nul 2>nul && set "PY=py -3" )
+) else (
+  echo [OK] Python deja present.
+)
+
+if not defined PY (
+  echo.
+  echo [!] Python vient d'etre installe mais n'est pas encore dans le PATH
+  echo     de cette fenetre. Rouvrez un terminal admin et relancez ce script pour
+  echo     terminer l'installation d'Impacket, NetExec et enum4linux-ng.
+  goto :psexec
+)
+
+rem --- pip + pipx (installation isolee des outils Python) ---
+%PY% -m pip --version >nul 2>nul
+if errorlevel 1 (
+  echo [X] pip indisponible pour cette installation de Python.
+  goto :psexec
+)
+%PY% -m pipx --version >nul 2>nul
+if errorlevel 1 (
+  echo [..] Installation de pipx...
+  %PY% -m pip install --user --upgrade pipx
+  %PY% -m pipx ensurepath
+) else (
+  echo [OK] pipx deja present.
+)
+
+rem --- Outils Python (pipx = pas de doublon, environnements isoles) ---
+rem  Impacket est sur PyPI ; NetExec et enum4linux-ng n'y sont pas (ou plus) :
+rem  on les installe depuis leur depot GitHub officiel.
+call :assure_pipx impacket "impacket"
+call :assure_pipx netexec "git+https://github.com/Pennyw0rth/NetExec"
+call :assure_pipx enum4linux-ng "git+https://github.com/cddmp/enum4linux-ng"
+
+rem --- Responder (clone officiel, seulement s'il est absent) ---
+set "RESP=%USERPROFILE%\outils-attaques\Responder"
+if exist "%RESP%\Responder.py" (
+  echo [OK] Responder deja present dans %RESP%.
+) else (
+  echo [..] Clonage de Responder...
+  git clone --depth 1 https://github.com/lgandx/Responder "%RESP%"
+)
+
+:psexec
+rem --- PsExec (Sysinternals) ---
+where psexec >nul 2>nul
+if errorlevel 1 (
+  echo [..] Installation de PsExec (Sysinternals)...
+  winget install --id Microsoft.Sysinternals.PsExec -e --source winget --accept-package-agreements --accept-source-agreements
+  if errorlevel 1 winget install --id Microsoft.Sysinternals -e --source winget --accept-package-agreements --accept-source-agreements
+) else (
+  echo [OK] PsExec deja present.
+)
+
+echo.
+echo [OK] Termine. Fermez puis rouvrez votre terminal pour recharger le PATH.
+goto :fin
+
+:assure_cmd
+rem %1 = commande a tester, %2 = id winget, %3 = nom affiche
+where %1 >nul 2>nul
+if errorlevel 1 (
+  echo [..] Installation de %3...
+  winget install --id %2 -e --source winget --accept-package-agreements --accept-source-agreements
+) else (
+  echo [OK] %3 deja present.
+)
+exit /b 0
+
+:assure_pipx
+rem %1 = nom du paquet dans pipx, %2 = paquet (nom PyPI ou URL git) a installer
+%PY% -m pipx list 2>nul | findstr /I /C:"package %1 " >nul
+if errorlevel 1 (
+  echo [..] Installation de %1 via pipx...
+  %PY% -m pipx install %2
+) else (
+  echo [OK] %1 deja installe via pipx.
+)
+exit /b 0
+
+:fin
+echo.
+pause
+exit /b
+</script>
+  <!-- Source : outils/installer-outils.sh -->
+  <script type="text/plain" id="installateur-outils-linux">
+#!/usr/bin/env bash
+# ===========================================================
+#  Installation des outils d'attaque (Linux)
+#  nmap, Impacket, NetExec, enum4linux-ng, Responder
+#  (PsExec est un binaire Windows ; sous Linux, impacket-psexec)
+#  A n'utiliser que sur un reseau de test autorise.
+# ===========================================================
+set -euo pipefail
+
+vert()  { printf '\033[32m%s\033[0m\n' "$*"; }
+jaune() { printf '\033[33m%s\033[0m\n' "$*"; }
+rouge() { printf '\033[31m%s\033[0m\n' "$*"; }
+
+echo "============================================================"
+echo "  Installation des outils d'attaque (Linux)"
+echo "  nmap, Impacket, NetExec, enum4linux-ng, Responder"
+echo "============================================================"
+
+# --- On n'exige pas root : sudo seulement si besoin ---
+if [ "$(id -u)" -eq 0 ]; then SUDO=""; else SUDO="sudo"; fi
+
+# --- Detection du gestionnaire de paquets ---
+if   command -v apt-get >/dev/null 2>&1; then GEST="apt"
+elif command -v dnf     >/dev/null 2>&1; then GEST="dnf"
+elif command -v pacman  >/dev/null 2>&1; then GEST="pacman"
+else rouge "[X] Gestionnaire de paquets non reconnu (apt / dnf / pacman)."; exit 1
+fi
+vert "[OK] Gestionnaire detecte : $GEST"
+
+pkg_install() {
+  case "$GEST" in
+    apt)    $SUDO apt-get update -y && $SUDO DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" ;;
+    dnf)    $SUDO dnf install -y "$@" ;;
+    pacman) $SUDO pacman -Sy --noconfirm "$@" ;;
+  esac
+}
+
+assure_sys() {
+  # $1 = commande a tester ; $2... = paquets a installer si absente
+  local cmd="$1"; shift
+  if command -v "$cmd" >/dev/null 2>&1; then
+    vert "[OK] $cmd deja present."
+  else
+    jaune "[..] Installation de $cmd..."
+    pkg_install "$@"
+  fi
+}
+
+# --- Prerequis systeme (git est requis pour installer NetExec/enum4linux-ng) ---
+assure_sys nmap nmap
+assure_sys git  git
+assure_sys python3 python3
+python3 -m pip --version >/dev/null 2>&1 || pkg_install python3-pip
+
+# --- pipx ---
+if command -v pipx >/dev/null 2>&1; then
+  vert "[OK] pipx deja present."
+else
+  jaune "[..] Installation de pipx..."
+  case "$GEST" in
+    pacman) pkg_install python-pipx || python3 -m pip install --user --upgrade pipx ;;
+    *)      pkg_install pipx        || python3 -m pip install --user --upgrade pipx ;;
+  esac
+  python3 -m pipx ensurepath >/dev/null 2>&1 || true
+  export PATH="$HOME/.local/bin:$PATH"
+fi
+
+assure_pipx() {
+  # $1 = nom du paquet dans pipx ; $2 = paquet (nom PyPI ou URL git) a installer
+  if pipx list 2>/dev/null | grep -qiE "package $1 "; then
+    vert "[OK] $1 deja installe (pipx)."
+  else
+    jaune "[..] Installation de $1 via pipx..."
+    pipx install "$2"
+  fi
+}
+
+# --- Outils Python (isoles, sans doublon) -----------------------------------
+#  Impacket est sur PyPI ; NetExec et enum4linux-ng n'y sont pas (ou plus) :
+#  on les installe depuis leur depot GitHub officiel.
+assure_pipx impacket       "impacket"
+assure_pipx netexec        "git+https://github.com/Pennyw0rth/NetExec"
+assure_pipx enum4linux-ng  "git+https://github.com/cddmp/enum4linux-ng"
+
+# --- Responder ---
+if command -v responder >/dev/null 2>&1; then
+  vert "[OK] Responder deja present (paquet systeme)."
+else
+  RESP="$HOME/outils-attaques/Responder"
+  if [ -f "$RESP/Responder.py" ]; then
+    vert "[OK] Responder deja present dans $RESP."
+  else
+    jaune "[..] Clonage de Responder..."
+    mkdir -p "$HOME/outils-attaques"
+    git clone --depth 1 https://github.com/lgandx/Responder "$RESP"
+  fi
+fi
+
+echo
+vert "[OK] Termine. Ouvrez un nouveau terminal pour recharger le PATH."
+echo "PsExec est un binaire Windows : sous Linux, utilisez impacket-psexec (deja installe)."
+</script>
+  <!-- SCRIPTS-INSTALLATION-FIN -->
+
+</body>
+</html>
