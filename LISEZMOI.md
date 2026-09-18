@@ -272,6 +272,11 @@ est validée dès qu'elle correspond (à la notation près). Deux usages :
 - **comptage d'opérations** : un champ `methode` reste affiché au-dessus des onglets,
   et `exemple` / `exercice` portent du `code` C.
 
+Le champ `methode` sert de **carte de cours** : c'est là que se définit le vocabulaire
+introduit par l'exercice (majorer, terme dominant, pire cas…) avant de s'en servir dans
+la démonstration. Les intertitres `{ titre: "…" }` y séparent le vocabulaire de la
+méthode proprement dite, et `{ entetes, lignes }` y insère un tableau récapitulatif.
+
 ```js
 {
   type: "probleme",
@@ -285,7 +290,8 @@ est validée dès qu'elle correspond (à la notation près). Deux usages :
     enonce: "Énoncé du problème.",           // → carte « Problème »
     code: "for (int i = 0; i < n; i++) {…}", // bloc de code facultatif
     legende: "…",                            // titre du bloc de code (facultatif)
-    formule: "La formule utilisée.",         // → carte « Formule »
+    formule: ["Étape 1…", ["puce", "puce"]], // → carte « Formule » (chaîne ou blocsTexte)
+    formuleTitre: "Démarche",                // titre de cette carte (défaut : « Formule »)
     reponse: "La réponse détaillée."         // → carte « Réponse » (en vert)
   },
   exercice: {                                // à résoudre (onglet « Exercice »)

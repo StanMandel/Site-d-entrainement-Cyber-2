@@ -219,7 +219,8 @@
        enonce: "…",                   // → carte « Problème » (chaîne ou blocsTexte)
        code: "for (…) { … }",         // bloc de code facultatif
        legende: "…",                  // titre du bloc (facultatif)
-       formule: "…",                  // → carte « Formule »
+       formule: "…",                  // → carte « Formule » (chaîne ou blocsTexte)
+       formuleTitre: "Démarche",      // facultatif (défaut : "Formule")
        reponse: "…"                   // → carte « Réponse » (en vert)
      },
      exercice: {                      // à résoudre (onglet « Exercice ») ; ou un tableau

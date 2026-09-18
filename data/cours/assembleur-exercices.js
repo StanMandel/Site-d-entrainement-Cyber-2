@@ -472,12 +472,14 @@ main:
           {
             enonce: "Que signifie le $ dans « $10 » ?",
             choix: ["La valeur 10 elle-même", "Le contenu de la mémoire à l'adresse 10", "Le registre numéro 10", "Une étiquette nommée 10"],
-            reponse: 0
+            reponse: 0,
+            explication: "Le $ marque une valeur immédiate : le nombre écrit tel quel dans l'instruction. Sans lui, « 10 » désignerait l'adresse mémoire 10."
           },
           {
             enonce: "Que signifie le % dans « %ecx » ?",
             choix: ["Un registre", "Un pourcentage", "Une variable", "Un reste de division"],
-            reponse: 0
+            reponse: 0,
+            explication: "Le % marque un registre. Sans lui, « ecx » serait lu comme le nom d'une variable placée en mémoire."
           },
           {
             enonce: "Comment écrire un commentaire ?",
@@ -500,12 +502,14 @@ main:
           {
             enonce: "Que signifie le suffixe q dans « addq » ?",
             choix: ["8 octets", "4 octets", "2 octets", "1 octet"],
-            reponse: 0
+            reponse: 0,
+            explication: "Le suffixe donne la taille traitée : b = 1 octet, w = 2, l = 4, q = 8. addq travaille donc sur 8 octets, la taille des registres %rax à %r15."
           },
           {
             enonce: "Quelle ligne définit une étiquette ?",
             choix: ["fin:", ".fin", "fin;", "%fin"],
-            reponse: 0
+            reponse: 0,
+            explication: "Une étiquette est un nom suivi de deux-points. Elle nomme l'adresse de la ligne qui suit et sert de cible aux sauts."
           },
           {
             enonce: "Que calcule cette instruction ?",
@@ -540,7 +544,8 @@ main:
           {
             enonce: "Que fait « addl total, %eax » ?",
             choix: ["eax = eax + total", "total = total + eax", "eax = total", "eax = eax + adresse de total"],
-            reponse: 0
+            reponse: 0,
+            explication: "Source d'abord, destination ensuite : le contenu de la variable total est ajouté à %eax et le résultat reste dans %eax. total, lui, n'est pas modifié."
           }
         ]
       },
@@ -618,7 +623,8 @@ main:
         movl    $2, %ecx
         addl    %ecx, %eax`,
             choix: ["9", "7", "2", "5"],
-            reponse: 0
+            reponse: 0,
+            explication: "eax = 7, puis ecx = 2. addl ajoute la source à la destination : eax = 7 + 2 = 9."
           },
           {
             enonce: "Que vaut %edx à la fin ?",
@@ -641,7 +647,8 @@ main:
         incl    %eax
         movl    %eax, x`,
             choix: ["6", "5", "1", "0"],
-            reponse: 0
+            reponse: 0,
+            explication: "eax reçoit le contenu de x, soit 5. incl ajoute 1 : eax = 6. La dernière ligne réécrit eax dans x, qui vaut donc 6."
           },
           {
             enonce: "Que vaut %ebx à la fin ?",
@@ -679,7 +686,8 @@ msg:    .string "abc"`,
         negl    %eax
         decl    %eax`,
             choix: ["-6", "-4", "4", "6"],
-            reponse: 0
+            reponse: 0,
+            explication: "eax = 5, negl change le signe : eax = -5. decl retire encore 1 : eax = -6."
           },
           {
             enonce: "Quelle ligne est refusée à l'assemblage ?",

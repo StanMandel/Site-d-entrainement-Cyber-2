@@ -95,7 +95,7 @@ const MoteurProbleme = {
       panneau.append(this._carte("Problème", { texte: ex.enonce, code: ex.code, langage: ex.langage, legende: ex.legende }));
     }
     if (ex.formule) {
-      panneau.append(this._carte("Formule", { texte: ex.formule, classe: "pb-formule" }));
+      panneau.append(this._carte(ex.formuleTitre || "Formule", { texte: ex.formule, classe: "pb-formule" }));
     }
     if (ex.reponse || ex.reponseCode) {
       panneau.append(this._carte("Réponse", { texte: ex.reponse, code: ex.reponseCode, langage: ex.langage, classe: "pb-reponse" }));
