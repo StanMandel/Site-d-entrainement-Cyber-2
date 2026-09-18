@@ -191,7 +191,6 @@ CONTENU["complexite-algorithmique"] = {
         printf("%d\\n", i);
     }
 }`,
-            placeholder: "Ex. 4n + 2",
             reponse: "3n + 3",
             accepte: ["3n+3", "3*n+3", "3·n+3", "3 + 3n", "3+3n"],
             indice: "Par itération : le test `i < n`, l'incrément `i++`, puis l'appel printf. Ajoutez ensuite l'initialisation et la dernière comparaison.",
@@ -242,7 +241,6 @@ CONTENU["complexite-algorithmique"] = {
         }
     }
 }`,
-            placeholder: "Ex. n·m",
             reponse: "n·m",
             accepte: ["nm", "n*m", "n×m", "m·n", "mn", "m*n", "m×n"],
             indice: "Les deux bornes sont indépendantes : la boucle sur j fait m tours, répétés n fois.",
@@ -291,7 +289,6 @@ CONTENU["complexite-algorithmique"] = {
         return n + somme(n - 1);
     }
 }`,
-            placeholder: "Ex. 5n + 2",
             reponse: "5n + 2",
             accepte: ["5n+2", "5*n+2", "5·n+2", "2 + 5n", "2+5n"],
             indice: "Par appel (chemin else) : le test, la soustraction n-1, l'addition, l'appel récursif et le return. Puis le cas de base.",
@@ -359,7 +356,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Simplifiez `O(5n² + 100n + 3)`.",
-            placeholder: "Ex. O(n³)",
             reponse: "O(n²)",
             accepte: ["O(n^2)", "o(n²)", "O(n2)"],
             indice: "Le terme dominant est celui de plus grand exposant ; les constantes disparaissent.",
@@ -382,7 +378,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Simplifiez `Ω(4n³ + 13n² + 5)`.",
-            placeholder: "Ex. Ω(n²)",
             reponse: "Ω(n³)",
             accepte: ["Ω(n^3)", "omega(n³)", "omega(n^3)", "Ω(n3)"],
             indice: "Comme pour O, on garde le terme dominant sans sa constante.",
@@ -408,7 +403,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Donnez la classe Θ de `7n² + 3n`.",
-            placeholder: "Ex. Θ(n³)",
             reponse: "Θ(n²)",
             accepte: ["Θ(n^2)", "theta(n²)", "theta(n^2)", "Θ(n2)"],
             indice: "Le terme dominant est n² ; il encadre l'expression par le haut et par le bas.",
@@ -434,7 +428,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Simplifiez `O(n³) × O(2n² + 7)`.",
-            placeholder: "Ex. O(n⁴)",
             reponse: "O(n⁵)",
             accepte: ["O(n^5)", "o(n⁵)", "o(n^5)", "O(n5)"],
             indice: "Simplifiez d'abord O(2n² + 7) en O(n²), puis multipliez les exposants.",
@@ -488,7 +481,6 @@ CONTENU["complexite-algorithmique"] = {
     }
     return s;
 }`,
-            placeholder: "Ex. Θ(n²)",
             reponse: "Θ(n)",
             accepte: ["theta(n)", "O(n)", "o(n)"],
             indice: "La boucle fait toujours n tours ; le reste est constant.",
@@ -531,7 +523,6 @@ CONTENU["complexite-algorithmique"] = {
     }
     return c;
 }`,
-            placeholder: "Ex. Θ(n)",
             reponse: "Θ(n²)",
             accepte: ["Θ(n^2)", "theta(n²)", "theta(n^2)", "O(n²)", "O(n^2)"],
             indice: "Deux boucles imbriquées de n tours chacune : le corps s'exécute n² fois.",
@@ -557,7 +548,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "En ne gardant que le pire cas, simplifiez `T(n) = Θ(n) + O(n²)`.",
-            placeholder: "Ex. O(n)",
             reponse: "O(n²)",
             accepte: ["O(n^2)", "o(n²)", "O(n2)"],
             indice: "Θ(nˡ) + O(nᵏ) avec l < k se réduit, au pire cas, au terme O dominant.",
@@ -603,7 +593,6 @@ CONTENU["complexite-algorithmique"] = {
     }
     return 0;
 }`,
-            placeholder: "Ex. Θ(1)",
             reponse: "Θ(n)",
             accepte: ["theta(n)", "O(n)", "o(n)"],
             indice: "Au pire cas, la boucle parcourt tout le tableau sans jamais entrer dans le if.",
@@ -626,7 +615,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Le **tri par insertion** ne rentre pas dans sa boucle `while` quand le tableau est déjà trié. Quelle est sa complexité au **meilleur cas** ?",
-            placeholder: "Ex. Θ(n²)",
             reponse: "Θ(n)",
             accepte: ["theta(n)", "O(n)", "o(n)"],
             indice: "Sans jamais entrer dans le while, il ne reste que la boucle for externe.",
