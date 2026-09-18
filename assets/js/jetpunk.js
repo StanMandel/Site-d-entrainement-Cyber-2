@@ -52,8 +52,7 @@ const MoteurJetPunk = {
       type: "text",
       autocomplete: "off",
       autocapitalize: "off",
-      spellcheck: "false",
-      placeholder: "Tapez une réponse…"
+      spellcheck: "false"
     });
 
     const compteur = el("div", { class: "compteur" },

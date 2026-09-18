@@ -294,7 +294,6 @@ est validée dès qu'elle correspond (à la notation près). Deux usages :
     code: "…",                               // bloc de code facultatif
     reponse: "3n + 3",                       // réponse attendue (obligatoire)
     accepte: ["3n+3", "3 + 3n"],             // autres écritures acceptées (facultatif)
-    placeholder: "Ex. 4n + 2",               // texte grisé de la barre (facultatif)
     indice: "Affiché après une tentative fausse.",           // facultatif
     solution: ["Explication montrée une fois résolu.", ["…"]]  // facultatif
   }
@@ -328,6 +327,11 @@ dépasse pas la taille de sa banque.
   le record à zéro.
 - Les scores sont enregistrés dans le navigateur (`localStorage`), sur cet appareil
   uniquement. Le bouton **Réinitialiser** sur la page d'une matière les efface.
+- Pour retrouver sa progression ailleurs : sur l'accueil, **Sauvegarder** produit un
+  code `EPITA1-…` (bouton Copier ou fichier `.txt`) et **Restaurer** le relit, en le
+  collant ou en choisissant le fichier. La restauration **fusionne** avec ce qui est
+  déjà sur l'appareil : pour chaque exercice, le meilleur record est conservé, donc
+  rien n'est perdu et le code peut être restauré plusieurs fois.
 - `data/cours/_modele.js` n'est pas chargé par le site : c'est une simple référence
   de format à copier.
 

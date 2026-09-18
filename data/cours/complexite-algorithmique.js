@@ -71,7 +71,6 @@ CONTENU["complexite-algorithmique"] = {
     int c = a * b;
     return c - a;
 }`,
-            placeholder: "Un nombre entier",
             reponse: "9",
             indice: "Une multiplication et une soustraction comptent chacune pour une opération, en plus des déclarations et affectations.",
             solution: [
@@ -135,7 +134,6 @@ CONTENU["complexite-algorithmique"] = {
         }
     }
 }`,
-            placeholder: "Un nombre entier",
             reponse: "5",
             indice: "Additionnez : la déclaration-affectation, chaque test, et l'appel à printf du chemin le plus profond.",
             solution: [
@@ -330,7 +328,6 @@ CONTENU["complexite-algorithmique"] = {
           },
           exercice: {
             enonce: "Pour `3n² + 2n + 1 = O(n²)`, en majorant chaque terme par un multiple de `n²` (pour `n ≥ 1`), quelle constante `c` obtenez-vous ?",
-            placeholder: "Un nombre",
             reponse: "6",
             indice: "Majorez : 1 ≤ 1·n², 2n ≤ 2·n², 3n² ≤ 3·n², puis additionnez les coefficients.",
             solution: [

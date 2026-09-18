@@ -86,7 +86,7 @@ const App = {
 
     for (const cours of visibles) grille.append(this._carteCours(cours));
 
-    this.vue.append(hero, grille);
+    this.vue.append(hero, this._sauvegarde(), grille);
 
     if (visibles.length === 0) {
       this.vue.append(el("div", { class: "vide" },
@@ -95,6 +95,140 @@ const App = {
         el("p", { texte: "Essayez un autre mot-clé." })
       ));
     }
+  },
+
+  /* ---------------- Accueil : sauvegarde de la progression -------
+     La progression vit dans le localStorage de ce navigateur. Le code
+     de sauvegarde permet de la retrouver ailleurs : on le copie (ou on
+     télécharge le fichier), puis on le colle dans « Restaurer ».
+     La restauration fusionne : le meilleur record de chaque exercice
+     est conservé, rien n'est écrasé.
+     ------------------------------------------------------------- */
+
+  _sauvegarde() {
+    const panneau = el("div", { class: "sauvegarde-panneau", hidden: true });
+    const boutons = {};
+    let ouvert = null;
+
+    const basculer = (nom) => {
+      ouvert = ouvert === nom ? null : nom;
+      vider(panneau);
+      if (ouvert) panneau.append(ouvert === "sauver" ? this._blocSauver() : this._blocRestaurer());
+      panneau.hidden = !ouvert;
+      for (const [cle, bouton] of Object.entries(boutons)) bouton.classList.toggle("actif", cle === ouvert);
+    };
+
+    boutons.sauver = el("button", {
+      class: "btn btn-doux btn-petit", type: "button",
+      disabled: Progres.compter() === 0,
+      onclick: () => basculer("sauver")
+    }, "⤓ Sauvegarder");
+
+    boutons.restaurer = el("button", {
+      class: "btn btn-fantome btn-petit", type: "button",
+      onclick: () => basculer("restaurer")
+    }, "⤒ Restaurer");
+
+    return el("section", { class: "sauvegarde" },
+      el("div", { class: "sauvegarde-ligne" },
+        el("h2", { texte: "Votre progression" }),
+        el("span", { class: "espace" }),
+        boutons.sauver, boutons.restaurer
+      ),
+      panneau
+    );
+  },
+
+  _blocSauver() {
+    const code = Progres.exporter();
+    const champ = el("input", {
+      class: "sauvegarde-code", type: "text", value: code,
+      readonly: "", spellcheck: "false", "aria-label": "Code de sauvegarde",
+      onfocus: (e) => e.currentTarget.select()
+    });
+
+    const copier = el("button", { class: "btn btn-principal btn-petit", type: "button" }, "Copier");
+    copier.addEventListener("click", () => {
+      champ.focus();
+      champ.select();
+      const marquer = () => {
+        copier.textContent = "Copié";
+        setTimeout(() => (copier.textContent = "Copier"), 1500);
+      };
+      const ecrire = navigator.clipboard
+        ? navigator.clipboard.writeText(code)
+        : Promise.reject(new Error("presse-papiers indisponible"));
+      Promise.resolve(ecrire).then(marquer, () => {
+        let ok = false;
+        try { ok = document.execCommand && document.execCommand("copy"); } catch (e) { ok = false; }
+        if (ok) marquer();
+        else toast("Copie impossible dans ce navigateur");
+      });
+    });
+
+    const nom = "progression-epita-" + new Date().toISOString().slice(0, 10) + ".txt";
+    const telecharger = el("button", { class: "btn btn-doux btn-petit", type: "button" }, "⤓ Télécharger");
+    telecharger.addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([code], { type: "text/plain;charset=utf-8" }));
+      const lien = el("a", { href: url, download: nom });
+      document.body.append(lien);
+      lien.click();
+      lien.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast("Téléchargé : " + nom);
+    });
+
+    return el("div", { class: "sauvegarde-bloc" },
+      el("label", { class: "sauvegarde-label" }, "Code de sauvegarde", champ),
+      el("div", { class: "sauvegarde-actions" }, copier, telecharger)
+    );
+  },
+
+  _blocRestaurer() {
+    const champ = el("textarea", {
+      class: "sauvegarde-code sauvegarde-zone", rows: "3",
+      spellcheck: "false", autocapitalize: "off", "aria-label": "Code de sauvegarde"
+    });
+    const erreur = el("p", { class: "sauvegarde-erreur", hidden: true });
+
+    const appliquer = () => {
+      erreur.hidden = true;
+      let bilan = null;
+      try {
+        bilan = Progres.restaurer(champ.value);
+      } catch (e) {
+        erreur.textContent = e.message;
+        erreur.hidden = false;
+        champ.focus();
+        return;
+      }
+      const parties = [];
+      if (bilan.ajoutes) parties.push(bilan.ajoutes + (bilan.ajoutes > 1 ? " exercices ajoutés" : " exercice ajouté"));
+      if (bilan.ameliores) parties.push(bilan.ameliores + (bilan.ameliores > 1 ? " records améliorés" : " record amélioré"));
+      toast(parties.length ? "Progression restaurée : " + parties.join(", ") : "Progression déjà à jour");
+      this.rendre();
+    };
+
+    const fichier = el("input", { type: "file", accept: ".txt,text/plain", hidden: true });
+    fichier.addEventListener("change", () => {
+      const choisi = fichier.files && fichier.files[0];
+      fichier.value = "";
+      if (!choisi) return;
+      const lecteur = new FileReader();
+      lecteur.onload = () => { champ.value = String(lecteur.result || "").trim(); appliquer(); };
+      lecteur.onerror = () => { erreur.textContent = "Fichier illisible."; erreur.hidden = false; };
+      lecteur.readAsText(choisi);
+    });
+
+    return el("div", { class: "sauvegarde-bloc" },
+      el("label", { class: "sauvegarde-label" }, "Code de sauvegarde", champ),
+      erreur,
+      el("div", { class: "sauvegarde-actions" },
+        el("button", { class: "btn btn-principal btn-petit", type: "button", onclick: appliquer }, "Restaurer"),
+        el("button", { class: "btn btn-doux btn-petit", type: "button", onclick: () => fichier.click() }, "Depuis un fichier"),
+        fichier
+      )
+    );
   },
 
   _carteCours(cours) {

@@ -154,7 +154,6 @@ const MoteurProbleme = {
 
     const champ = el("input", {
       class: "jp-saisie pb-champ", type: "text",
-      placeholder: item.placeholder || "Votre réponse…",
       autocomplete: "off", spellcheck: "false", autocapitalize: "off"
     });
 

@@ -75,6 +75,9 @@ exceptions sont des bogues internes.
 
 **Persistance** : `localStorage` uniquement, lu/écrit dans des `try/catch`
 (`Progres` dans `utils.js` pour les scores, brouillons de code dans `code.js`).
+`Progres.exporter()` sérialise toute la progression en un code base64 préfixé
+`EPITA1-` et `Progres.restaurer(code)` le refusionne (meilleur record gardé) ;
+`App._sauvegarde` expose les deux sur l'accueil (Sauvegarder / Restaurer).
 
 ## Conventions de contenu (préférences de l'utilisateur)
 

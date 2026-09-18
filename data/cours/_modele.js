@@ -228,7 +228,6 @@
        code: "…",                     // facultatif
        reponse: "3n + 3",             // réponse attendue (obligatoire)
        accepte: ["3n+3", "3 + 3n"],   // autres écritures acceptées (facultatif)
-       placeholder: "Ex. 4n + 2",     // facultatif
        indice: "Affiché après une tentative fausse.",  // facultatif
        solution: ["Explication une fois résolu."]      // facultatif (chaîne ou blocsTexte)
      }
