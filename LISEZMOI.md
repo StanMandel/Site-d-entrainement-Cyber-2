@@ -145,9 +145,11 @@ des questions.
 
 ### 2. Jeu de rapidité — `type: "jetpunk"`
 
-Une barre de saisie en haut, des tuiles en dessous. Dès que la bonne réponse est
+La partie s'ouvre sur la liste des définitions tirées, à lire sans chrono ;
+« Commencer » affiche la barre de saisie et les tuiles. Dès que la bonne réponse est
 tapée, la tuile passe au vert ; quand toutes sont vertes, la partie est gagnée.
 Idéal pour le vocabulaire anglais, les définitions ou la reconnaissance de schémas.
+Avec `masquerIndice: true`, la liste préalable est sautée : il n'y a rien à lire.
 
 ```js
 {
@@ -338,6 +340,13 @@ dépasse pas la taille de sa banque.
   collant ou en choisissant le fichier. La restauration **fusionne** avec ce qui est
   déjà sur l'appareil : pour chaque exercice, le meilleur record est conservé, donc
   rien n'est perdu et le code peut être restauré plusieurs fois.
+- Le bouton ⚙ en bas à droite de l'écran ouvre les paramètres : le thème
+  (**Clair**, **Sombre**, **Bon pour les yeux**) est retenu dans le `localStorage`
+  sous la clé `epita-theme` et appliqué avant le premier affichage. Chaque thème ne
+  redéfinit que les jetons de couleur en haut de `assets/css/style.css` : une
+  couleur écrite en dur dans une règle ne suivrait pas le thème. Pour un fond teinté
+  ou un texte assombri, utiliser `color-mix(… var(--teinte))` et
+  `color-mix(… var(--ombrage))`, qui valent « blanc » et « noir » en thème clair.
 - `data/cours/_modele.js` n'est pas chargé par le site : c'est une simple référence
   de format à copier.
 

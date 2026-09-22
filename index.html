@@ -11,6 +11,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="assets/css/style.css">
+
+  <!-- Thème choisi dans les paramètres : posé avant le premier affichage. -->
+  <script>
+    try {
+      var theme = localStorage.getItem("epita-theme");
+      if (theme === "sombre" || theme === "repos") document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) { /* mode privé : thème clair */ }
+  </script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 </head>
 <body>

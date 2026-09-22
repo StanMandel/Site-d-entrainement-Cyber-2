@@ -239,6 +239,42 @@ const Progres = {
   }
 };
 
+/* ---------- Thème d'affichage (localStorage) ---------- */
+
+const Theme = {
+  CLE: "epita-theme",
+  DEFAUT: "clair",
+  LISTE: [
+    { id: "clair",  nom: "Clair" },
+    { id: "sombre", nom: "Sombre" },
+    { id: "repos",  nom: "Bon pour les yeux" }
+  ],
+
+  /** Thème enregistré, ou « clair » si rien n'est valide. */
+  actuel() {
+    let choix = null;
+    try {
+      choix = localStorage.getItem(this.CLE);
+    } catch (e) {
+      choix = null;
+    }
+    return this.LISTE.some((t) => t.id === choix) ? choix : this.DEFAUT;
+  },
+
+  /** Applique le thème à la page et le retient pour les prochaines visites. */
+  appliquer(id) {
+    const theme = this.LISTE.some((t) => t.id === id) ? id : this.DEFAUT;
+    if (theme === this.DEFAUT) document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", theme);
+    try {
+      localStorage.setItem(this.CLE, theme);
+    } catch (e) {
+      /* mode privé : le thème vaut pour la session, sans plus */
+    }
+    return theme;
+  }
+};
+
 /* ---------- Notifications ---------- */
 
 let _toastTimer = null;

@@ -1,9 +1,11 @@
 /* =============================================================
    Moteur « JetPunk »
    -------------------------------------------------------------
-   Une barre de saisie en haut, une grille de tuiles en dessous.
-   Dès que l'utilisateur tape la bonne réponse associée à une tuile,
-   celle-ci passe au vert. Quand toutes les tuiles sont vertes,
+   D'abord la liste des définitions tirées, pour les lire à tête
+   reposée ; « Commencer » lance la partie.
+   Ensuite une barre de saisie en haut et une grille de tuiles en
+   dessous. Dès que l'utilisateur tape la bonne réponse associée à une
+   tuile, celle-ci passe au vert. Quand toutes les tuiles sont vertes,
    le jeu est terminé.
 
    Utilisation :
@@ -39,12 +41,55 @@ const MoteurJetPunk = {
       secondes: exercice.temps || 0
     };
 
-    this._rendre(conteneur, etat);
+    this._apercu(conteneur, etat);
+  },
+
+  /* ---------------- Liste des définitions avant la partie -------
+     Les réponses ne sont jamais montrées ici : uniquement les
+     définitions du tirage en cours, dans l'ordre des tuiles.
+     ------------------------------------------------------------- */
+
+  _apercu(conteneur, etat) {
+    vider(conteneur);
+    const exercice = etat.exercice;
+
+    /* Rien à lire d'avance quand les tuiles sont masquées. */
+    if (exercice.masquerIndice) return this._rendre(conteneur, etat);
+
+    const colonnes = Math.min(exercice.colonnes || 2, 3);
+    const liste = el("div", { class: "jp-apercu-liste", style: { "--cols": colonnes } });
+    etat.items.forEach((item, i) => {
+      liste.append(el("div", { class: "jp-apercu-item" },
+        el("span", { class: "jp-apercu-num", texte: String(i + 1) }),
+        el("span", { texte: item.indice })
+      ));
+    });
+
+    const compte = etat.items.length + (etat.items.length > 1 ? " définitions" : " définition");
+    const resume = etat.secondes > 0
+      ? compte + " · " + formaterTemps(etat.secondes) + " au chrono"
+      : compte;
+
+    conteneur.append(el("div", { class: "jp-apercu" },
+      exercice.consigne
+        ? el("p", { class: "sous", texte: exercice.consigne, style: { color: "var(--texte-doux)" } })
+        : null,
+      liste,
+      el("p", { class: "sous", texte: resume, style: { color: "var(--texte-pale)" } }),
+      el("div", { class: "jp-apercu-actions" },
+        el("button", {
+          class: "btn btn-principal",
+          onclick: () => this._rendre(conteneur, etat)
+        }, "Commencer"),
+        el("button", { class: "btn btn-fantome", onclick: etat.contexte.surRetour }, "← Retour au cours")
+      )
+    ));
   },
 
   _rendre(conteneur, etat) {
     vider(conteneur);
     const exercice = etat.exercice;
+    etat.debut = Date.now();   /* la lecture des définitions n'est pas chronométrée */
 
     /* ---- Barre de saisie ---- */
     const saisie = el("input", {

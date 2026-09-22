@@ -53,7 +53,9 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
   `1.1`, tableaux, `code` / `codes` côte à côte). `texteRiche()` y est défini : seuls
   `` `code` `` et `**gras**` sont interprétés, après échappement HTML.
 - `qcm.js`, `jetpunk.js` — QCM et jeu de rapidité. Le champ `tirage` garde N questions
-  ou tuiles au hasard dans la banque, à chaque partie.
+  ou tuiles au hasard dans la banque, à chaque partie. Un jetpunk s'ouvre sur la liste
+  des définitions tirées (`_apercu`), sans les réponses ; « Commencer » lance la partie
+  et le chrono.
 - `code.js` — `MoteurCode` : exercices de programmation (éditeur à coloration maison,
   bouton ▶, résultats). Définit aussi `cartesPrincipe()`, réutilisée par `qcm.js` pour
   afficher `cours`/`exemple` à gauche des questions.
@@ -74,7 +76,8 @@ Les erreurs levées pour l'utilisateur portent `erreurCode = true` et `ligne` ; 
 exceptions sont des bogues internes.
 
 **Persistance** : `localStorage` uniquement, lu/écrit dans des `try/catch`
-(`Progres` dans `utils.js` pour les scores, brouillons de code dans `code.js`).
+(`Progres` dans `utils.js` pour les scores, `Theme` pour le thème choisi, brouillons
+de code dans `code.js`).
 `Progres.exporter()` sérialise toute la progression en un code base64 préfixé
 `EPITA1-` et `Progres.restaurer(code)` le refusionne (meilleur record gardé) ;
 `App._sauvegarde` expose les deux sur l'accueil (Sauvegarder / Restaurer).
@@ -88,8 +91,12 @@ exceptions sont des bogues internes.
 - Exercices de programmation : principe très court, exemple, objectif ; courts, un
   mécanisme chacun, difficulté croissante ; plusieurs tests d'entrées différentes pour
   empêcher les valeurs codées en dur ; les traductions C ↔ assembleur en fin de parcours.
-- Design : thème clair et coloré, angles carrés (variables `--r-s/m/l/xl`), et **aucun
-  texte méta** dans l'interface (pas d'explication du fonctionnement du site).
+- Design : coloré, angles carrés (variables `--r-s/m/l/xl`), et **aucun texte méta**
+  dans l'interface (pas d'explication du fonctionnement du site). Trois thèmes au
+  choix (⚙ en bas à droite) : clair par défaut, sombre, « bon pour les yeux ». Chacun
+  ne redéfinit que les jetons de couleur en tête de `style.css` ; n'écrivez pas de
+  couleur en dur dans une règle, servez-vous de `var(--teinte)` et `var(--ombrage)`
+  dans les `color-mix` (le « blanc » et le « noir » du thème courant).
 - Interface au vouvoiement.
 - Énumérations : liste à pastilles (tableau imbriqué dans `cours`/`consigne`), jamais
   d'éléments séparés par « · » au milieu d'une phrase.

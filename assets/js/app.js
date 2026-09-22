@@ -31,7 +31,65 @@ const App = {
     });
 
     window.addEventListener("hashchange", () => this.rendre());
+    this._reglages();
     this.rendre();
+  },
+
+  /* ---------------- Réglages : bouton, panneau et thème ---------- */
+
+  _reglages() {
+    Theme.appliquer(Theme.actuel());
+
+    const panneau = el("div", { class: "modale", hidden: true });
+    const boite = el("div", { class: "modale-boite" });
+    panneau.append(boite);
+
+    const fermer = () => { panneau.hidden = true; };
+    panneau.addEventListener("click", (e) => { if (e.target === panneau) fermer(); });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !panneau.hidden) fermer();
+    });
+
+    const choix = {};
+    const marquer = (id) => {
+      for (const [cle, bouton] of Object.entries(choix)) bouton.classList.toggle("actif", cle === id);
+    };
+
+    const themes = el("div", { class: "themes" });
+    for (const theme of Theme.LISTE) {
+      const bouton = el("button", {
+        class: "theme-choix", type: "button",
+        onclick: () => marquer(Theme.appliquer(theme.id))
+      },
+        el("span", { class: "theme-apercu " + theme.id },
+          el("i", {}), el("i", {}), el("i", {})
+        ),
+        theme.nom
+      );
+      choix[theme.id] = bouton;
+      themes.append(bouton);
+    }
+    marquer(Theme.actuel());
+
+    boite.append(
+      el("div", { class: "modale-entete" },
+        el("h2", { texte: "Paramètres" }),
+        el("button", { class: "modale-fermer", type: "button", "aria-label": "Fermer", onclick: fermer }, "✕")
+      ),
+      el("p", { class: "reglage-titre", texte: "Thème" }),
+      themes
+    );
+
+    const bouton = el("button", {
+      class: "btn-reglages", type: "button",
+      "aria-label": "Paramètres",
+      onclick: () => {
+        marquer(Theme.actuel());
+        panneau.hidden = false;
+      }
+    }, "⚙");
+
+    document.body.append(bouton, panneau);
   },
 
   aller(hash) {

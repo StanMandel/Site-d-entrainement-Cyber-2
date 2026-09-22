@@ -1,7 +1,8 @@
 /* =============================================================
    Entraînements EPITA — feuille de style
-   Direction : fond clair et chaud, couleurs vives par matière,
-   formes carrées, ombres discrètes. Aucun thème sombre néon.
+   Direction : couleurs vives par matière, formes carrées, ombres
+   discrètes. Trois thèmes : clair (défaut), sombre, repos des yeux ;
+   chacun ne redéfinit que les jetons ci-dessous.
    ============================================================= */
 
 /* ---------------------- 1. Jetons de design ------------------ */
@@ -23,6 +24,20 @@
   --or:          #E9A400;
   --or-fond:     #FFF6E0;
 
+  --vert-texte:  #0C7A4E;
+  --vert-bord:   #B7E8D2;
+  --rouge-texte: #8A2E26;
+  --rouge-bord:  #F5C4C0;
+  --or-texte:    #9A6E00;
+  --or-bord:     #F2E3BE;
+  --or-fond-2:   #FFFBF0;
+
+  /* Base des fonds teintés et des textes assombris : ce que valent
+     « blanc » et « noir » dans le thème courant. */
+  --teinte:      #FFFFFF;
+  --ombrage:     #000000;
+  --surface-floue: rgba(255, 255, 255, .85);
+
   --c:           #3D6DF2;   /* accent courant, surchargé par matière */
 
   /* Formes carrées : angles à peine adoucis. */
@@ -39,6 +54,93 @@
   --mono: "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
 
   --entete-h: 60px;
+
+  --fond-motif:
+    radial-gradient(58rem 34rem at 8% -8%,   rgba(61, 109, 242, .09), transparent 60%),
+    radial-gradient(52rem 30rem at 96% 2%,   rgba(236, 72, 153, .09), transparent 60%),
+    radial-gradient(46rem 30rem at 50% 110%, rgba(43, 182, 115, .09), transparent 60%);
+}
+
+/* ---------------------- 1 bis. Thèmes ------------------------ */
+
+/* Sombre : fonds profonds, accents éclaircis, mêmes formes. */
+:root[data-theme="sombre"] {
+  --fond:        #12151D;
+  --fond-2:      #171B25;
+  --surface:     #1C202B;
+  --surface-2:   #222735;
+  --texte:       #E8EBF3;
+  --texte-doux:  #A8B0C2;
+  --texte-pale:  #7B8396;
+  --bord:        #2C3140;
+  --bord-fort:   #3B4255;
+
+  --vert:        #2ECC8A;
+  --vert-fond:   #14301F;
+  --vert-bord:   #24603F;
+  --vert-texte:  #74E3AE;
+  --rouge:       #F0695D;
+  --rouge-fond:  #33191A;
+  --rouge-bord:  #6B302B;
+  --rouge-texte: #FFA096;
+  --or:          #F2B33D;
+  --or-fond:     #2F2715;
+  --or-fond-2:   #272113;
+  --or-bord:     #5C4A1F;
+  --or-texte:    #F4D288;
+
+  --teinte:      #1C202B;
+  --ombrage:     #FFFFFF;
+  --surface-floue: rgba(28, 32, 43, .88);
+
+  --ombre-s: 0 1px 0 rgba(0, 0, 0, .28);
+  --ombre-m: 0 1px 2px rgba(0, 0, 0, .34), 0 8px 20px -14px rgba(0, 0, 0, .7);
+  --ombre-l: 0 2px 4px rgba(0, 0, 0, .34), 0 20px 40px -24px rgba(0, 0, 0, .75);
+
+  --fond-motif:
+    radial-gradient(58rem 34rem at 8% -8%,   rgba(61, 109, 242, .16), transparent 62%),
+    radial-gradient(52rem 30rem at 96% 2%,   rgba(236, 72, 153, .12), transparent 62%),
+    radial-gradient(46rem 30rem at 50% 110%, rgba(43, 182, 115, .12), transparent 62%);
+}
+
+/* Bon pour les yeux : papier chaud, peu de bleu, contraste adouci. */
+:root[data-theme="repos"] {
+  --fond:        #F0E6D2;
+  --fond-2:      #E7DBC2;
+  --surface:     #FAF4E6;
+  --surface-2:   #F4EBD9;
+  --texte:       #3A3327;
+  --texte-doux:  #6B6252;
+  --texte-pale:  #968D7B;
+  --bord:        #DFD2B6;
+  --bord-fort:   #C9BA99;
+
+  --vert:        #2F8A5F;
+  --vert-fond:   #E3EFDD;
+  --vert-bord:   #BBD6BC;
+  --vert-texte:  #1F5F3F;
+  --rouge:       #C2513F;
+  --rouge-fond:  #F7E3DA;
+  --rouge-bord:  #E5C2B2;
+  --rouge-texte: #7C3123;
+  --or:          #C98A12;
+  --or-fond:     #F7EBCE;
+  --or-fond-2:   #FAF1DB;
+  --or-bord:     #E3D0A4;
+  --or-texte:    #7E5D12;
+
+  --teinte:      #FAF4E6;
+  --ombrage:     #2A2418;
+  --surface-floue: rgba(250, 244, 230, .9);
+
+  --ombre-s: 0 1px 0 rgba(74, 62, 40, .05);
+  --ombre-m: 0 1px 2px rgba(74, 62, 40, .07), 0 8px 20px -14px rgba(74, 62, 40, .3);
+  --ombre-l: 0 2px 4px rgba(74, 62, 40, .07), 0 20px 40px -24px rgba(74, 62, 40, .34);
+
+  --fond-motif:
+    radial-gradient(58rem 34rem at 8% -8%,   rgba(201, 138, 18, .12), transparent 60%),
+    radial-gradient(52rem 30rem at 96% 2%,   rgba(168, 120, 60, .10), transparent 60%),
+    radial-gradient(46rem 30rem at 50% 110%, rgba(47, 138, 95, .10), transparent 60%);
 }
 
 * { box-sizing: border-box; }
@@ -50,10 +152,7 @@ body {
   font-family: var(--police);
   color: var(--texte);
   background-color: var(--fond);
-  background-image:
-    radial-gradient(58rem 34rem at 8% -8%,  rgba(61, 109, 242, .09), transparent 60%),
-    radial-gradient(52rem 30rem at 96% 2%,  rgba(236, 72, 153, .09), transparent 60%),
-    radial-gradient(46rem 30rem at 50% 110%, rgba(43, 182, 115, .09), transparent 60%);
+  background-image: var(--fond-motif);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   line-height: 1.55;
@@ -70,7 +169,7 @@ a { color: inherit; text-decoration: none; }
 /* ---------------------- 2. En-tête ---------------------------- */
 .entete {
   position: sticky; top: 0; z-index: 50;
-  background: rgba(255, 255, 255, .85);
+  background: var(--surface-floue);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--bord);
 }
@@ -110,9 +209,9 @@ body.dans-exercice .entete { display: none; }
 }
 .onglet-accueil:hover { background: color-mix(in srgb, var(--c) 10%, transparent); color: var(--texte); }
 .onglet-accueil.actif {
-  background: color-mix(in srgb, var(--c) 13%, white);
+  background: color-mix(in srgb, var(--c) 13%, var(--teinte));
   border-color: color-mix(in srgb, var(--c) 38%, transparent);
-  color: color-mix(in srgb, var(--c) 72%, black);
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 
 /* ---------------------- 3. Boutons ---------------------------- */
@@ -129,12 +228,12 @@ body.dans-exercice .entete { display: none; }
 .btn-principal {
   background: var(--c); border-color: transparent; color: #fff;
 }
-.btn-principal:hover { background: color-mix(in srgb, var(--c) 86%, black); }
+.btn-principal:hover { background: color-mix(in srgb, var(--c) 86%, var(--ombrage)); }
 
 .btn-doux {
-  background: color-mix(in srgb, var(--c) 12%, white);
+  background: color-mix(in srgb, var(--c) 12%, var(--teinte));
   border-color: color-mix(in srgb, var(--c) 28%, transparent);
-  color: color-mix(in srgb, var(--c) 70%, black);
+  color: color-mix(in srgb, var(--c) 70%, var(--ombrage));
 }
 .btn-fantome { background: transparent; border-color: var(--bord); color: var(--texte-doux); }
 .btn-petit { padding: .36rem .75rem; font-size: .82rem; }
@@ -166,9 +265,9 @@ body.dans-exercice .entete { display: none; }
 .sauvegarde-ligne h2 { font-size: .98rem; }
 .sauvegarde-ligne .espace { flex: 1; min-width: .5rem; }
 .sauvegarde-ligne .btn.actif {
-  background: color-mix(in srgb, var(--c) 18%, white);
+  background: color-mix(in srgb, var(--c) 18%, var(--teinte));
   border-color: color-mix(in srgb, var(--c) 38%, transparent);
-  color: color-mix(in srgb, var(--c) 72%, black);
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 
 .sauvegarde-panneau { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--bord); }
@@ -214,7 +313,7 @@ body.dans-exercice .entete { display: none; }
 
 .carte-icone {
   width: 42px; height: 42px; display: grid; place-items: center; font-size: 1.3rem;
-  border-radius: var(--r-m); background: color-mix(in srgb, var(--c) 12%, white);
+  border-radius: var(--r-m); background: color-mix(in srgb, var(--c) 12%, var(--teinte));
   border: 1px solid color-mix(in srgb, var(--c) 22%, transparent);
 }
 .carte-cours h3 { font-size: 1.02rem; }
@@ -225,13 +324,13 @@ body.dans-exercice .entete { display: none; }
   display: inline-flex; align-items: center; gap: .3rem;
   padding: .18rem .5rem; border-radius: var(--r-s);
   font-size: .74rem; font-weight: 700;
-  background: color-mix(in srgb, var(--c) 12%, white);
-  color: color-mix(in srgb, var(--c) 70%, black);
+  background: color-mix(in srgb, var(--c) 12%, var(--teinte));
+  color: color-mix(in srgb, var(--c) 70%, var(--ombrage));
   border: 1px solid color-mix(in srgb, var(--c) 20%, transparent);
 }
 .puce-vide { background: var(--fond-2); color: var(--texte-pale); border-color: var(--bord); }
-.puce-vert { background: var(--vert-fond); color: #0C7A4E; border-color: #B7E8D2; }
-.puce-or   { background: var(--or-fond); color: #9A6E00; border-color: #F3DFA6; }
+.puce-vert { background: var(--vert-fond); color: var(--vert-texte); border-color: var(--vert-bord); }
+.puce-or   { background: var(--or-fond); color: var(--or-texte); border-color: var(--or-bord); }
 
 .barre-progres { height: 5px; background: var(--fond-2); overflow: hidden; flex: 1; }
 .barre-progres > i { display: block; height: 100%; background: var(--c); transition: width .4s; }
@@ -245,16 +344,16 @@ body.dans-exercice .entete { display: none; }
   --c: var(--tc);
   display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
   padding: 1.3rem 1.4rem; border-radius: var(--r-l);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 11%, white), var(--surface) 70%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 11%, var(--teinte)), var(--surface) 70%);
   border: 1px solid color-mix(in srgb, var(--c) 22%, var(--bord));
   border-top: 3px solid var(--c);
 }
-.entete-cours .carte-icone { width: 52px; height: 52px; font-size: 1.6rem; background: #fff; }
+.entete-cours .carte-icone { width: 52px; height: 52px; font-size: 1.6rem; background: var(--surface); }
 .entete-cours h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); }
 .entete-cours .desc { color: var(--texte-doux); margin-top: .3rem; max-width: 60ch; }
 .entete-cours-info { flex: 1; min-width: 240px; }
 .entete-cours-score { display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; min-width: 150px; }
-.anneau { font-size: 1.8rem; font-weight: 800; color: color-mix(in srgb, var(--c) 72%, black); line-height: 1.1; }
+.anneau { font-size: 1.8rem; font-weight: 800; color: color-mix(in srgb, var(--c) 72%, var(--ombrage)); line-height: 1.1; }
 .anneau small {
   display: block; font-size: .7rem; font-weight: 650; color: var(--texte-pale);
   text-transform: uppercase; letter-spacing: .06em;
@@ -276,7 +375,7 @@ body.dans-exercice .entete { display: none; }
   display: flex; flex-direction: column; gap: .5rem; text-align: left; cursor: pointer;
   padding: 1.05rem 1.1rem; border-radius: var(--r-l);
   background: var(--surface); border: 1px solid var(--bord);
-  border-left: 4px solid color-mix(in srgb, var(--c) 55%, white);
+  border-left: 4px solid color-mix(in srgb, var(--c) 55%, var(--teinte));
   transition: box-shadow .15s, border-color .15s, transform .12s;
 }
 .carte-guide:hover {
@@ -305,8 +404,8 @@ body.dans-exercice .entete { display: none; }
 .chapitre-num {
   width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center;
   border-radius: var(--r-s); font-size: .84rem; font-weight: 800;
-  background: color-mix(in srgb, var(--c) 14%, white);
-  color: color-mix(in srgb, var(--c) 72%, black);
+  background: color-mix(in srgb, var(--c) 14%, var(--teinte));
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .chapitre-titre { flex: 1; }
 .chapitre-titre h3 { font-size: 1rem; }
@@ -327,7 +426,7 @@ body.dans-exercice .entete { display: none; }
   transition: background .15s, border-color .15s, box-shadow .15s;
 }
 .carte-exo:hover {
-  background: #fff; border-color: color-mix(in srgb, var(--c) 38%, transparent);
+  background: var(--surface); border-color: color-mix(in srgb, var(--c) 38%, transparent);
   box-shadow: var(--ombre-m);
 }
 .carte-exo-haut { display: flex; align-items: center; gap: .5rem; }
@@ -335,8 +434,8 @@ body.dans-exercice .entete { display: none; }
   flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 2.1rem; height: 22px;
   padding: 0 .35rem; border-radius: var(--r-s); vertical-align: middle;
   font-family: var(--mono); font-size: .74rem; font-weight: 700; letter-spacing: 0;
-  background: color-mix(in srgb, var(--c) 14%, white);
-  color: color-mix(in srgb, var(--c) 72%, black);
+  background: color-mix(in srgb, var(--c) 14%, var(--teinte));
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .exo-entete h1 .exo-num { margin-right: .55rem; height: 26px; font-size: .82rem; position: relative; top: -2px; }
 .carte-exo h4 { font-size: .93rem; flex: 1; }
@@ -348,11 +447,11 @@ body.dans-exercice .entete { display: none; }
   padding: .16rem .5rem; border-radius: var(--r-s);
   font-size: .71rem; font-weight: 750;
 }
-.type-qcm      { background: #E8EEFE; color: #2A52C4; }
-.type-jetpunk  { background: #E5F7EE; color: #0E8A5B; }
-.type-guide    { background: #F3EAFB; color: #7A3FAF; }
-.type-terminal { background: #23283810; color: #2E3446; }
-.type-probleme { background: #EDE7FE; color: #5B3FC4; }
+.type-qcm      { background: color-mix(in srgb, #3D6DF2 13%, var(--teinte)); color: color-mix(in srgb, #3D6DF2 68%, var(--ombrage)); }
+.type-jetpunk  { background: color-mix(in srgb, #15A46A 13%, var(--teinte)); color: color-mix(in srgb, #15A46A 68%, var(--ombrage)); }
+.type-guide    { background: color-mix(in srgb, #7A3FAF 13%, var(--teinte)); color: color-mix(in srgb, #7A3FAF 68%, var(--ombrage)); }
+.type-terminal { background: color-mix(in srgb, var(--texte) 9%, var(--teinte)); color: var(--texte-doux); }
+.type-probleme { background: color-mix(in srgb, #5B3FC4 13%, var(--teinte)); color: color-mix(in srgb, #5B3FC4 68%, var(--ombrage)); }
 
 /* État vide */
 .vide {
@@ -383,16 +482,16 @@ body.dans-exercice .entete { display: none; }
   font-variant-numeric: tabular-nums;
   background: var(--fond-2); border: 1px solid var(--bord);
 }
-.chrono.urgent { background: var(--rouge-fond); border-color: #F5C4C0; color: var(--rouge); animation: pulse 1s infinite; }
+.chrono.urgent { background: var(--rouge-fond); border-color: var(--rouge-bord); color: var(--rouge); animation: pulse 1s infinite; }
 @keyframes pulse { 50% { opacity: .55; } }
 
 .compteur {
   display: inline-flex; align-items: baseline; gap: .25rem;
   padding: .42rem .9rem; border-radius: var(--r-m); font-weight: 800;
   font-variant-numeric: tabular-nums;
-  background: color-mix(in srgb, var(--c) 12%, white);
+  background: color-mix(in srgb, var(--c) 12%, var(--teinte));
   border: 1px solid color-mix(in srgb, var(--c) 25%, transparent);
-  color: color-mix(in srgb, var(--c) 72%, black);
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .compteur span { font-size: .82rem; font-weight: 650; color: var(--texte-doux); }
 
@@ -414,8 +513,8 @@ body.dans-exercice .entete { display: none; }
 .qcm-enonce { font-size: 1.18rem; font-weight: 750; margin-top: .35rem; line-height: 1.4; }
 .qcm-multi {
   display: inline-block; margin-top: .5rem; font-size: .77rem; font-weight: 700;
-  color: color-mix(in srgb, var(--c) 70%, black);
-  background: color-mix(in srgb, var(--c) 11%, white);
+  color: color-mix(in srgb, var(--c) 70%, var(--ombrage));
+  background: color-mix(in srgb, var(--c) 11%, var(--teinte));
   padding: .12rem .5rem; border-radius: var(--r-s);
 }
 
@@ -432,14 +531,14 @@ body.dans-exercice .entete { display: none; }
   background: var(--surface-2); border: 1.5px solid var(--bord);
   transition: border-color .15s, background .15s;
 }
-.choix:hover:not(.verrou) { border-color: color-mix(in srgb, var(--c) 50%, transparent); background: #fff; }
+.choix:hover:not(.verrou) { border-color: color-mix(in srgb, var(--c) 50%, transparent); background: var(--surface); }
 .choix-lettre {
   width: 26px; height: 26px; flex: 0 0 auto; display: grid; place-items: center;
   border-radius: var(--r-s); font-size: .79rem; font-weight: 800;
-  background: #fff; border: 1.5px solid var(--bord); color: var(--texte-doux);
+  background: var(--surface); border: 1.5px solid var(--bord); color: var(--texte-doux);
 }
 .choix-texte { flex: 1; }
-.choix.selection { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, white); }
+.choix.selection { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--teinte)); }
 .choix.selection .choix-lettre { background: var(--c); border-color: var(--c); color: #fff; }
 .choix.juste { border-color: var(--vert); background: var(--vert-fond); }
 .choix.juste .choix-lettre { background: var(--vert); border-color: var(--vert); color: #fff; }
@@ -450,12 +549,12 @@ body.dans-exercice .entete { display: none; }
 
 .explication {
   margin-top: 1rem; padding: .85rem 1rem; border-radius: var(--r-s);
-  background: #FFFBF0; border: 1px solid #F2E3BE; border-left: 3px solid var(--or);
+  background: var(--or-fond-2); border: 1px solid var(--or-bord); border-left: 3px solid var(--or);
   font-size: .89rem;
 }
-.explication b { color: #9A6E00; }
-.explication.ok { background: var(--vert-fond); border-color: #B7E8D2; border-left-color: var(--vert); }
-.explication.ok b { color: #0C7A4E; }
+.explication b { color: var(--or-texte); }
+.explication.ok { background: var(--vert-fond); border-color: var(--vert-bord); border-left-color: var(--vert); }
+.explication.ok b { color: var(--vert-texte); }
 
 .qcm-pied { display: flex; align-items: center; gap: .6rem; margin-top: 1.2rem; flex-wrap: wrap; }
 .qcm-pied .espace { flex: 1; }
@@ -467,7 +566,7 @@ body.dans-exercice .entete { display: none; }
   position: sticky; top: calc(var(--entete-h) + .6rem); z-index: 20;
   display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
   padding: .7rem; margin-bottom: 1rem; border-radius: var(--r-l);
-  background: rgba(255, 255, 255, .94); backdrop-filter: blur(10px);
+  background: var(--surface-floue); backdrop-filter: blur(10px);
   border: 1px solid var(--bord); box-shadow: var(--ombre-m);
 }
 .jp-saisie {
@@ -478,7 +577,7 @@ body.dans-exercice .entete { display: none; }
 }
 .jp-saisie::placeholder { color: var(--texte-pale); font-weight: 500; }
 .jp-saisie:focus {
-  border-color: var(--c); background: #fff;
+  border-color: var(--c); background: var(--surface);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 14%, transparent);
 }
 .jp-saisie.flash-ok { border-color: var(--vert); background: var(--vert-fond); }
@@ -498,9 +597,9 @@ body.dans-exercice .entete { display: none; }
 .tuile-cache .tuile-indice { color: var(--texte-pale); }
 
 .tuile.trouve { background: var(--vert-fond); border-color: var(--vert); }
-.tuile.trouve .tuile-reponse { color: #0C7A4E; font-weight: 800; }
+.tuile.trouve .tuile-reponse { color: var(--vert-texte); font-weight: 800; }
 
-.tuile.manque { background: var(--rouge-fond); border-color: color-mix(in srgb, var(--rouge) 45%, white); }
+.tuile.manque { background: var(--rouge-fond); border-color: color-mix(in srgb, var(--rouge) 45%, var(--teinte)); }
 .tuile.manque .tuile-reponse { color: var(--rouge); font-weight: 800; }
 
 /* ---------------------- 9. Écran de résultat ------------------ */
@@ -515,7 +614,7 @@ body.dans-exercice .entete { display: none; }
 .resultat .sous { color: var(--texte-doux); margin-top: .35rem; }
 .resultat-score {
   display: inline-flex; align-items: baseline; gap: .3rem; margin: 1rem 0 .25rem;
-  font-size: 3rem; font-weight: 800; color: color-mix(in srgb, var(--c) 72%, black);
+  font-size: 3rem; font-weight: 800; color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .resultat-score span { font-size: 1.25rem; color: var(--texte-pale); font-weight: 700; }
 .resultat-actions { display: flex; justify-content: center; gap: .5rem; margin-top: 1.4rem; flex-wrap: wrap; }
@@ -565,7 +664,7 @@ body.dans-exercice .entete { display: none; }
 }
 .sommaire-titre {
   font-size: .9rem; font-weight: 800; margin-bottom: .2rem;
-  color: color-mix(in srgb, var(--c) 72%, black);
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .sommaire-titre span {
   display: inline-grid; place-items: center; min-width: 20px; height: 20px;
@@ -578,14 +677,14 @@ body.dans-exercice .entete { display: none; }
 /* En-tête de partie */
 .guide-partie {
   margin-top: 1.1rem; padding: 1rem 1.3rem; border-radius: var(--r-l);
-  background: color-mix(in srgb, var(--c) 10%, white);
+  background: color-mix(in srgb, var(--c) 10%, var(--teinte));
   border: 1px solid color-mix(in srgb, var(--c) 25%, var(--bord));
   border-left: 4px solid var(--c);
   scroll-margin-top: calc(var(--entete-h) + 16px);
 }
 .guide-partie-num {
   font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--c) 70%, black);
+  color: color-mix(in srgb, var(--c) 70%, var(--ombrage));
 }
 .guide-partie h2 { font-size: 1.32rem; margin-top: .15rem; }
 .guide-partie p { margin-top: .35rem; font-size: .92rem; color: var(--texte-doux); }
@@ -602,7 +701,7 @@ body.dans-exercice .entete { display: none; }
   font-variant-numeric: tabular-nums; white-space: nowrap;
   background: var(--c); color: #fff;
 }
-.etape-num.notion { background: color-mix(in srgb, var(--c) 14%, white); color: color-mix(in srgb, var(--c) 72%, black); }
+.etape-num.notion { background: color-mix(in srgb, var(--c) 14%, var(--teinte)); color: color-mix(in srgb, var(--c) 72%, var(--ombrage)); }
 .etape-corps { min-width: 0; }
 .etape h3 { font-size: 1.05rem; }
 .etape p { margin-top: .45rem; font-size: .93rem; color: var(--texte-doux); }
@@ -660,7 +759,7 @@ body.dans-exercice .entete { display: none; }
 .telechargement-legende code { font-family: var(--mono); font-size: .85em; }
 .telechargement-voir { margin: .6rem .8rem .8rem; }
 .telechargement-voir summary {
-  cursor: pointer; font-size: .84rem; font-weight: 650; color: color-mix(in srgb, var(--c) 72%, black);
+  cursor: pointer; font-size: .84rem; font-weight: 650; color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
   padding: .2rem 0;
 }
 .telechargement-code {
@@ -678,10 +777,10 @@ body.dans-exercice .entete { display: none; }
 
 .remarque {
   margin-top: .7rem; padding: .7rem .9rem; border-radius: var(--r-s);
-  background: #FFFBF0; border: 1px solid #F2E3BE; border-left: 3px solid var(--or);
-  font-size: .87rem; color: #6B5518;
+  background: var(--or-fond-2); border: 1px solid var(--or-bord); border-left: 3px solid var(--or);
+  font-size: .87rem; color: var(--or-texte);
 }
-.remarque.attention { background: var(--rouge-fond); border-color: #F5C4C0; border-left-color: var(--rouge); color: #8A2E26; }
+.remarque.attention { background: var(--rouge-fond); border-color: var(--rouge-bord); border-left-color: var(--rouge); color: var(--rouge-texte); }
 .remarque b { color: inherit; }
 
 .guide-fin { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .4rem; }
@@ -690,7 +789,7 @@ body.dans-exercice .entete { display: none; }
 .tableau { margin-top: .75rem; overflow-x: auto; }
 .tableau table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .tableau th, .tableau td { padding: .5rem .7rem; border: 1px solid var(--bord); text-align: left; vertical-align: top; }
-.tableau th { background: color-mix(in srgb, var(--c) 12%, white); font-weight: 750; }
+.tableau th { background: color-mix(in srgb, var(--c) 12%, var(--teinte)); font-weight: 750; }
 .tableau td { color: var(--texte-doux); }
 .tableau td code { white-space: nowrap; }
 
@@ -703,7 +802,7 @@ body.dans-exercice .entete { display: none; }
 }
 
 /* ---------------------- 11. Exercices de programmation ------- */
-.type-code { background: #FFF1E3; color: #B4570D; }
+.type-code { background: color-mix(in srgb, #E07A24 15%, var(--teinte)); color: color-mix(in srgb, #E07A24 70%, var(--ombrage)); }
 
 .code-exo {
   --c: var(--tc);
@@ -724,7 +823,7 @@ body.dans-exercice .entete { display: none; }
 }
 .code-carte h3 {
   font-size: .74rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase;
-  color: color-mix(in srgb, var(--c) 72%, black);
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
 }
 .code-carte p { margin-top: .45rem; font-size: .92rem; color: var(--texte-doux); }
 .code-carte p b { color: var(--texte); }
@@ -750,7 +849,7 @@ body.dans-exercice .entete { display: none; }
 .code-objectif .code-puces { color: var(--texte); }
 
 .code-objectif {
-  background: color-mix(in srgb, var(--c) 7%, white);
+  background: color-mix(in srgb, var(--c) 7%, var(--teinte));
   border-color: color-mix(in srgb, var(--c) 28%, var(--bord));
   border-left: 4px solid var(--c);
 }
@@ -815,15 +914,15 @@ body.dans-exercice .entete { display: none; }
   padding: .75rem 1rem; border-radius: var(--r-l); font-size: .92rem;
   animation: apparait .2s ease both;
 }
-.code-bandeau.ok { background: var(--vert-fond); border: 1px solid #B7E8D2; border-left: 4px solid var(--vert); color: #0C7A4E; }
-.code-bandeau.ko { background: var(--rouge-fond); border: 1px solid #F5C4C0; border-left: 4px solid var(--rouge); color: #8A2E26; }
+.code-bandeau.ok { background: var(--vert-fond); border: 1px solid var(--vert-bord); border-left: 4px solid var(--vert); color: var(--vert-texte); }
+.code-bandeau.ko { background: var(--rouge-fond); border: 1px solid var(--rouge-bord); border-left: 4px solid var(--rouge); color: var(--rouge-texte); }
 .code-bandeau b { font-size: 1rem; }
 .code-bandeau .btn { margin-left: auto; }
 
 .code-message {
   display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap;
   padding: .6rem .85rem; border-radius: var(--r-s);
-  background: #FFF6F5; border: 1px solid #F5C4C0; font-size: .87rem; color: #8A2E26;
+  background: var(--rouge-fond); border: 1px solid var(--rouge-bord); font-size: .87rem; color: var(--rouge-texte);
 }
 .code-message-ligne {
   flex: 0 0 auto; padding: .05rem .4rem; border-radius: var(--r-s);
@@ -839,7 +938,7 @@ body.dans-exercice .entete { display: none; }
 }
 .code-test.ok .code-test-marque { background: var(--vert); }
 .code-test.ko .code-test-marque { background: var(--rouge); }
-.code-test.ko { border-color: #F5C4C0; }
+.code-test.ko { border-color: var(--rouge-bord); }
 .code-test-entrees { font-family: var(--mono); font-size: .78rem; color: var(--texte-doux); }
 .code-test .code-message { margin: 0 .8rem .5rem; }
 .code-test-table { overflow-x: auto; border-top: 1px solid var(--bord); }
@@ -896,8 +995,8 @@ body.dans-exercice .entete { display: none; }
 .term-objectif .btn { margin-top: .7rem; }
 .term-obj-indice {
   margin-top: .6rem; padding: .55rem .75rem; border-radius: var(--r-s);
-  background: #FFFBF0; border: 1px solid #F2E3BE; border-left: 3px solid var(--or);
-  font-size: .87rem; color: #6B5518;
+  background: var(--or-fond-2); border: 1px solid var(--or-bord); border-left: 3px solid var(--or);
+  font-size: .87rem; color: var(--or-texte);
 }
 .term-obj-indice[hidden] { display: none; }
 
@@ -961,7 +1060,7 @@ body.dans-exercice .entete { display: none; }
 .probleme-exo { --c: var(--tc); margin-top: 1rem; display: flex; flex-direction: column; gap: .9rem; }
 
 .pb-methode {
-  background: color-mix(in srgb, var(--c) 7%, white);
+  background: color-mix(in srgb, var(--c) 7%, var(--teinte));
   border-color: color-mix(in srgb, var(--c) 26%, var(--bord));
   border-left: 4px solid var(--c);
 }
@@ -980,7 +1079,7 @@ body.dans-exercice .entete { display: none; }
 }
 .pb-onglet:hover { color: var(--texte); }
 .pb-onglet.actif {
-  background: var(--surface); color: color-mix(in srgb, var(--c) 78%, black);
+  background: var(--surface); color: color-mix(in srgb, var(--c) 78%, var(--ombrage));
   border-color: var(--bord); box-shadow: var(--ombre-s);
 }
 
@@ -988,9 +1087,9 @@ body.dans-exercice .entete { display: none; }
 
 .pb-formule { border-left: 3px solid color-mix(in srgb, var(--c) 55%, var(--bord)); }
 .pb-formule p { color: var(--texte); font-size: 1rem; }
-.pb-reponse { background: var(--vert-fond); border-color: #B7E8D2; border-left: 4px solid var(--vert); }
-.pb-reponse h3 { color: #0C7A4E; }
-.pb-reponse p { color: #14603F; }
+.pb-reponse { background: var(--vert-fond); border-color: var(--vert-bord); border-left: 4px solid var(--vert); }
+.pb-reponse h3 { color: var(--vert-texte); }
+.pb-reponse p { color: var(--vert-texte); }
 
 .pb-code { margin-top: .7rem; }
 .pb-code-legende {
@@ -1026,18 +1125,110 @@ body.dans-exercice .entete { display: none; }
   font-family: var(--mono); font-size: .95rem; color: var(--texte);
   transition: background .12s, border-color .12s;
 }
-.pb-touche:hover { background: color-mix(in srgb, var(--c) 12%, white); border-color: color-mix(in srgb, var(--c) 45%, var(--bord)); }
+.pb-touche:hover { background: color-mix(in srgb, var(--c) 12%, var(--teinte)); border-color: color-mix(in srgb, var(--c) 45%, var(--bord)); }
 
 .pb-reaction:empty { display: none; }
 .pb-reaction { margin-top: .3rem; }
 .pb-reaction .explication code, .pb-reaction .pb-solution code {
-  font-family: var(--mono); font-size: .9em; background: #ffffff88;
+  font-family: var(--mono); font-size: .9em; background: color-mix(in srgb, var(--surface) 55%, transparent);
   border: 1px solid var(--bord); padding: .05rem .35rem; border-radius: var(--r-s);
 }
 .pb-reaction .btn-fantome { margin-top: .6rem; }
 .pb-solution { margin-top: .7rem; }
 .pb-solution p, .pb-solution ul { color: var(--texte-doux); font-size: .9rem; }
 .pb-solution .code-intertitre { margin-top: 0; }
+
+/* ------------------ 14. Réglages et thèmes -------------------- */
+.btn-reglages {
+  position: fixed; right: 1rem; bottom: 1rem; z-index: 90;
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--r-m); border: 1px solid var(--bord);
+  background: var(--surface); box-shadow: var(--ombre-m);
+  font-size: 1.05rem; line-height: 1; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.btn-reglages:hover {
+  background: color-mix(in srgb, var(--c) 12%, var(--teinte));
+  border-color: color-mix(in srgb, var(--c) 40%, var(--bord));
+  transform: rotate(25deg);
+}
+
+.modale {
+  position: fixed; inset: 0; z-index: 110;
+  display: flex; align-items: center; justify-content: center; padding: 1.2rem;
+  background: color-mix(in srgb, #0B0E16 55%, transparent);
+  backdrop-filter: blur(3px);
+}
+.modale[hidden] { display: none; }
+
+.modale-boite {
+  width: min(460px, 100%);
+  background: var(--surface); border: 1px solid var(--bord);
+  border-radius: var(--r-l); box-shadow: var(--ombre-l);
+  padding: 1.2rem 1.3rem 1.3rem;
+}
+.modale-entete { display: flex; align-items: center; gap: .8rem; margin-bottom: 1rem; }
+.modale-entete h2 { font-size: 1.15rem; }
+.modale-fermer {
+  margin-left: auto; width: 30px; height: 30px; border-radius: var(--r-s);
+  border: 1px solid var(--bord); background: var(--surface-2);
+  color: var(--texte-doux); cursor: pointer; font-size: .9rem; line-height: 1;
+}
+.modale-fermer:hover { background: var(--fond-2); color: var(--texte); }
+
+.reglage-titre {
+  font-size: .74rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--texte-pale); margin-bottom: .5rem;
+}
+
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+.theme-choix {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: .7rem .5rem; cursor: pointer;
+  border: 1.5px solid var(--bord); border-radius: var(--r-m);
+  background: var(--surface-2); color: var(--texte-doux);
+  font-family: inherit; font-size: .82rem; font-weight: 700; text-align: center;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.theme-choix:hover { border-color: color-mix(in srgb, var(--c) 45%, var(--bord)); color: var(--texte); }
+.theme-choix.actif {
+  border-color: var(--c); color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
+  background: color-mix(in srgb, var(--c) 10%, var(--teinte));
+}
+
+.theme-apercu {
+  width: 100%; height: 38px; border-radius: var(--r-s);
+  border: 1px solid var(--bord-fort); display: flex; overflow: hidden;
+}
+.theme-apercu i { flex: 1; }
+.theme-apercu.clair  i:nth-child(1) { background: #FAF7F1; }
+.theme-apercu.clair  i:nth-child(2) { background: #FFFFFF; }
+.theme-apercu.clair  i:nth-child(3) { background: #3D6DF2; }
+.theme-apercu.sombre i:nth-child(1) { background: #12151D; }
+.theme-apercu.sombre i:nth-child(2) { background: #1C202B; }
+.theme-apercu.sombre i:nth-child(3) { background: #2ECC8A; }
+.theme-apercu.repos  i:nth-child(1) { background: #F0E6D2; }
+.theme-apercu.repos  i:nth-child(2) { background: #FAF4E6; }
+.theme-apercu.repos  i:nth-child(3) { background: #C98A12; }
+
+/* ------------------ 15. JetPunk : liste préalable -------------- */
+.jp-apercu { display: flex; flex-direction: column; gap: .9rem; }
+.jp-apercu-liste {
+  display: grid; gap: .45rem;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+}
+.jp-apercu-item {
+  display: flex; gap: .55rem; align-items: baseline;
+  padding: .55rem .7rem; border-radius: var(--r-m);
+  background: var(--surface); border: 1px solid var(--bord);
+  font-size: .88rem; line-height: 1.4;
+}
+.jp-apercu-num {
+  font-family: var(--mono); font-size: .74rem; font-weight: 700;
+  color: color-mix(in srgb, var(--c) 70%, var(--ombrage));
+  flex: 0 0 auto;
+}
+.jp-apercu-actions { display: flex; gap: .6rem; flex-wrap: wrap; }
 
 /* ---------------------- 13. Responsive ------------------------ */
 @media (max-width: 980px) {
@@ -1050,6 +1241,9 @@ body.dans-exercice .entete { display: none; }
   .jp-grille { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
   .entete-cours-score { align-items: flex-start; }
   .etape { grid-template-columns: 1fr; gap: .5rem; }
+  .themes { grid-template-columns: 1fr; }
+  .jp-apercu-liste { grid-template-columns: 1fr; }
+  .btn-reglages { right: .7rem; bottom: .7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

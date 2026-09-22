@@ -96,8 +96,10 @@
 
    4) EXERCICE DE TYPE "jetpunk"
    -------------------------------------------------------------
-   Une barre de saisie en haut, des tuiles en dessous. Dès que la
-   bonne réponse est tapée, la tuile correspondante passe au vert.
+   La liste des définitions tirées s'affiche d'abord (« Commencer »
+   lance la partie), sauf si « masquerIndice » est vrai. Puis une barre
+   de saisie en haut et des tuiles en dessous : dès que la bonne réponse
+   est tapée, la tuile correspondante passe au vert.
    {
      type: "jetpunk",
      id: "ch1-voc",
