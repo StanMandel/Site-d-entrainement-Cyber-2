@@ -316,6 +316,7 @@ body.dans-exercice .entete { display: none; }
   border-radius: var(--r-m); background: color-mix(in srgb, var(--c) 12%, var(--teinte));
   border: 1px solid color-mix(in srgb, var(--c) 22%, transparent);
 }
+.carte-cours.reussi, .carte-cours.reussi:hover { border-color: var(--vert); border-left-color: var(--vert); }
 .carte-cours h3 { font-size: 1.02rem; }
 .carte-cours .desc { font-size: .85rem; color: var(--texte-doux); flex: 1; }
 .carte-pied { display: flex; align-items: center; gap: .5rem; margin-top: .1rem; }
@@ -395,6 +396,7 @@ body.dans-exercice .entete { display: none; }
   background: var(--surface); border: 1px solid var(--bord);
   border-radius: var(--r-l); overflow: hidden;
 }
+.chapitre.reussi { border: 2px solid var(--vert); }
 .chapitre-entete {
   display: flex; align-items: center; gap: .85rem; width: 100%;
   padding: .95rem 1.15rem; background: none; border: 0; cursor: pointer; text-align: left;
@@ -429,6 +431,7 @@ body.dans-exercice .entete { display: none; }
   background: var(--surface); border-color: color-mix(in srgb, var(--c) 38%, transparent);
   box-shadow: var(--ombre-m);
 }
+.carte-exo.reussi, .carte-exo.reussi:hover { border-color: var(--vert); }
 .carte-exo-haut { display: flex; align-items: center; gap: .5rem; }
 .exo-num {
   flex: 0 0 auto; display: inline-grid; place-items: center; min-width: 2.1rem; height: 22px;

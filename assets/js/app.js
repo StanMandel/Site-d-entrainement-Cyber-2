@@ -316,7 +316,7 @@ const App = {
     }
 
     return el("button", {
-      class: "carte-cours",
+      class: "carte-cours" + (this._toutReussi(cours.slug, exercicesDuCours(cours.slug)) ? " reussi" : ""),
       type: "button",
       style: { "--tc": cours.couleur },
       onclick: () => this.aller("#/c/" + cours.slug)
@@ -426,7 +426,7 @@ const App = {
     }
 
     const bloc = el("section", {
-      class: "chapitre" + (this.chapitresOuverts[cle] ? " ouvert" : ""),
+      class: "chapitre" + (this.chapitresOuverts[cle] ? " ouvert" : "") + (this._toutReussi(cours.slug, exos) ? " reussi" : ""),
       style: { "--tc": cours.couleur }
     },
       el("button", {
@@ -452,6 +452,13 @@ const App = {
     return bloc;
   },
 
+  /** Vrai si chaque exercice de la liste a un record d'au moins 80 %. */
+  _toutReussi(slug, exos) {
+    if (!exos.length) return false;
+    const resultats = Progres.cours(slug);
+    return exos.every((ex) => resultats[ex.id] && resultats[ex.id].meilleur >= 80);
+  },
+
   _carteExo(cours, exo, numero) {
     const resultat = Progres.lire(cours.slug, exo.id);
     const meta = this._metaType(exo);
@@ -470,7 +477,7 @@ const App = {
     }
 
     return el("button", {
-      class: "carte-exo",
+      class: "carte-exo" + (resultat && resultat.meilleur >= 80 ? " reussi" : ""),
       type: "button",
       style: { "--tc": cours.couleur },
       onclick: () => this.aller("#/c/" + cours.slug + "/" + exo.id)
