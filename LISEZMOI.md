@@ -22,6 +22,8 @@ assets/js/mini-c.js         interpréteur d'un sous-ensemble de C
 assets/js/verif-code.js     exécution des tests des exercices de programmation
 assets/js/code.js           page des exercices de programmation (éditeur, résultats)
 assets/js/terminal.js       moteur des exercices « terminal » (commandes à taper)
+assets/js/reseau-cisco.js   simulateur Cisco (topologie, IOS, ping) + moteur « reseau »
+assets/js/probleme.js       moteur des mini-cours à réponse saisie
 assets/js/app.js            onglets, routage, rendu des pages
 data/cours.js               liste des 14 matières (nom, couleur, emoji)
 data/cours/<slug>.js        LE CONTENU : guides, chapitres et exercices
@@ -315,6 +317,74 @@ ignorés — `O(n log n)`, `O(nlogn)` et `O(n·log(n))` sont donc équivalents. 
 autres variantes (ordre des termes, `n2` sans exposant…), lister les formes dans
 `accepte`.
 
+### 6. Configuration réseau Cisco — `type: "reseau"`
+
+La page montre d'abord l'**énoncé** (principe, scénario, objectifs) avec un bouton
+**« 🖧 Configurer le réseau → »**. Celui-ci ouvre la scène **en plein écran**, par-dessus
+toute la page : il ne reste qu'une **petite flèche `←` en haut à gauche** (ou la touche
+`Échap`) pour revenir à l'énoncé. Faire l'aller-retour ne reconstruit rien — appareils,
+câbles, positions et consoles **restent tels quels**.
+
+La scène est un plan de travail façon **Packet Tracer** : des appareils (**routeurs**,
+**switches**, **PC**) posés sur une grille. L'utilisateur peut les **déplacer**
+librement (glisser-déposer, souris ou doigt), en **ajouter** (palette), les **relier**
+(bouton « 🔌 Relier » : on clique l'appareil, puis **le port** à utiliser — choisi tout
+seul quand il n'y en a qu'un), puis ouvrir la **console** d'un appareil : elle s'ouvre
+en **fenêtre posée sur la scène**, et s'y tapent de vraies commandes **Cisco IOS**.
+
+Les **câbles sont tracés** entre les appareils avec le **nom des ports** à chaque
+extrémité : **verts** quand les deux ports sont allumés, **rouges pointillés** sinon —
+on voit donc d'un coup d'œil qu'il manque un `no shutdown`. Un **clic sur un câble le
+retire**. Le bouton **« ✓ Vérifier »** simule le réseau (pings de bout en bout) : si
+tous les tests passent, l'exercice est validé.
+Score = tests réussis / nombre de tests. Chaque exercice introduit un concept
+(adressage, `no shutdown`, route statique, route par défaut, VLAN, trunk, inter-VLAN).
+
+Sous-ensemble IOS reconnu (abréviations admises) : `enable`, `configure terminal`,
+`hostname`, `interface g0/0` (et sous-interface `g0/0.10`), `ip address`,
+`no shutdown` / `shutdown`, `encapsulation dot1q N`, `ip route`, `vlan N` / `name`,
+`switchport mode access|trunk`, `switchport access vlan N`,
+`show ip interface brief`, `show ip route`, `show vlan brief`, `ping`. Le PC est un
+poste simplifié : `ip <adresse> <masque> [passerelle]`, `show ip`, `ping`.
+
+```js
+{
+  type: "reseau",
+  id: "res-static",
+  titre: "Router entre deux réseaux",
+  description: "Deux LAN reliés par un lien WAN : routes statiques.",
+  cours: "…", exemple: { … },          // colonne de gauche (comme "code")
+  intro: ["Scénario…"],                // blocsTexte
+  consigne: "…",                       // chaîne ou blocsTexte
+  objectifs: ["`R1 g0/0` = 192.168.1.1/24", …],  // liste à pastilles
+  topologie: {                         // topologie de départ (souvent déjà câblée)
+    appareils: [                       // x, y = position sur le plan en % (facultatif)
+      { nom: "R1",  type: "routeur", x: 30, y: 42 },
+      { nom: "PC1", type: "pc",      x: 70, y: 42 }
+    ],
+    liens: [ { de: "R1", deIf: "g0/0", vers: "PC1", versIf: "eth0" } ]
+  },
+  palette: ["routeur","switch","pc"], // ajoutables (défaut : les trois)
+  verrouTopologie: false,              // true = ni ajout ni câble ni suppression
+  preconfig: { R2: ["enable","conf t", …] },  // déjà configuré au départ
+  tests: [                             // pings = la validation
+    { de: "PC1", vers: "PC2", attendu: true,  message: "PC1 joint PC2" },
+    { de: "PC1", vers: "PC3", attendu: false, message: "isolation VLAN" }
+  ],                                   // vers : nom d'appareil (→ son IP) ou IP littérale
+  solution: {                          // commandes par appareil (réussit tous les tests)
+    R1:  ["enable","configure terminal","interface g0/0","ip address 192.168.1.1 255.255.255.0","no shutdown"],
+    PC1: ["ip 192.168.1.10 255.255.255.0 192.168.1.1"]
+  },
+  solutionTopologie: { appareils:[…], liens:[…] } // si l'utilisateur doit AUSSI
+                                       // construire la topologie (appliquée au contrôle)
+}
+```
+
+Le simulateur (`assets/js/reseau-cisco.js`) est **pur** (sans DOM) et réutilisé par le
+vérificateur : avec la solution (et `solutionTopologie`), tous les tests doivent
+passer ; sans elle, au moins un doit échouer, ce qui garantit que l'exercice n'est pas
+déjà résolu au départ.
+
 Après tout ajout ou modification, lancer depuis le dossier du site :
 
 ```
@@ -324,8 +394,9 @@ node outils/verifier-exercices.js
 Le script vérifie que chaque solution de programmation réussit tous ses tests, que
 chaque code de départ échoue, que la solution de chaque objectif « terminal » valide
 ses propres motifs, que chaque exercice « probleme » a une réponse attendue cohérente,
-que les réponses des QCM désignent des choix existants et que chaque `tirage` ne
-dépasse pas la taille de sa banque.
+que chaque exercice « reseau » est validé par sa solution (et **non** validé sans
+elle), que les réponses des QCM désignent des choix existants et que chaque `tirage`
+ne dépasse pas la taille de sa banque.
 
 ## Points d'attention
 
@@ -384,3 +455,14 @@ dépasse pas la taille de sa banque.
   boucles, disjonction de cas, tri par sélection et par insertion). Chaque exercice
   offre un exemple résolu, un problème similaire et une barre de saisie avec clavier
   de caractères spéciaux.
+- **Réseaux avancés** — 5 guides en micro-parties de cours (les couches et
+  l'encapsulation, l'adressage IPv4 et les sous-réseaux, la commutation et les VLAN,
+  le routage IP, et une fiche technique Cisco IOS) ; 4 QCM de théorie + un jeu de
+  rapidité sur les masques CIDR ; et **9 exercices de configuration Cisco**
+  (`type: "reseau"`, moteur `reseau-cisco.js`) de difficulté croissante :
+  adresser un LAN, relier deux routeurs en /30, routage statique entre deux réseaux,
+  route par défaut, isolation par VLAN, trunk entre switches, inter-VLAN en
+  router-on-a-stick, construction complète de la topologie, puis routage à travers
+  trois routeurs. Chacun se valide en cliquant « Vérifier » (le simulateur teste la
+  connectivité par ping). L'objectif : après ce parcours, être capable de faire
+  les TP.

@@ -1047,6 +1047,138 @@ body.dans-exercice .entete { display: none; }
 }
 .term-saisie::placeholder { color: #5C657A; }
 
+/* ------------- 11 ter. Exercices « reseau » (Cisco) ---------- */
+.res-exo {
+  --c: var(--tc);
+  display: flex; flex-direction: column; gap: .8rem; margin-top: 1rem;
+}
+
+.res-exo .res-vue[hidden] { display: none; }
+.res-vue-enonce {
+  display: grid; align-items: start; gap: .8rem;
+  grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+}
+.res-vue-tete, .res-vue-pied { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+
+/* Scène en plein écran : elle recouvre toute la page, seule la flèche
+   de retour (en haut à gauche de la barre d'outils) en fait sortir. */
+.res-vue-config.plein {
+  position: fixed; inset: 0; z-index: 70;
+  padding: .6rem; background: var(--fond); background-image: var(--fond-motif);
+  display: flex; flex-direction: column; gap: .6rem; overflow: auto; outline: none;
+}
+.res-vue-config.plein .res-box { flex: 1 1 auto; min-height: 0; }
+.res-vue-config.plein .res-plan { flex: 1 1 auto; height: auto; min-height: 240px; }
+.res-vue-config.plein .res-resultats { flex: 0 0 auto; max-height: 38vh; overflow-y: auto; }
+
+.res-retour {
+  flex: 0 0 auto; cursor: pointer;
+  display: inline-grid; place-items: center; width: 30px; height: 30px;
+  border-radius: var(--r-s); border: 1px solid var(--bord-fort);
+  background: var(--surface); color: var(--texte-doux);
+  font-size: 1rem; font-weight: 800; line-height: 1;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.res-retour:hover {
+  background: color-mix(in srgb, var(--c) 12%, var(--surface));
+  border-color: var(--c); color: var(--texte);
+}
+.res-box {
+  border-radius: var(--r-l); background: var(--surface); border: 1px solid var(--bord);
+  padding: .8rem .9rem; display: flex; flex-direction: column; gap: .8rem;
+}
+.res-barre { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.res-barre .res-espace { flex: 1; }
+.res-aide { font-size: .84rem; color: var(--texte-doux); }
+
+/* Plan de travail : appareils posés librement, câbles tracés en SVG. */
+.res-plan {
+  position: relative; overflow: hidden;
+  height: clamp(340px, 60vh, 580px); border-radius: var(--r-m);
+  background-color: color-mix(in srgb, var(--c) 4%, var(--surface-2));
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--ombrage) 13%, transparent) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  border: 1px solid color-mix(in srgb, var(--c) 24%, var(--bord));
+  touch-action: none;
+}
+.res-plan.cablage { cursor: crosshair; border-color: var(--or); }
+.res-vide {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--texte-pale); font-size: .9rem; text-align: center; padding: 0 1rem;
+}
+
+/* Câbles */
+.res-cables { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* Trait large invisible : rend le câble facile à viser pour le retirer. */
+.res-cable-zone { stroke: transparent; stroke-width: 16; pointer-events: stroke; cursor: pointer; }
+.res-cable-zone.fige { pointer-events: none; cursor: default; }
+.res-cable-zone:hover + .res-cable { stroke-width: 4.5; }
+.res-cable { stroke-width: 2.5; stroke-linecap: round; transition: stroke-width .12s; }
+.res-cable.actif  { stroke: var(--vert); }
+.res-cable.eteint { stroke: color-mix(in srgb, var(--rouge) 70%, var(--bord-fort)); stroke-dasharray: 6 4; }
+.res-cable-port {
+  font-family: var(--mono); font-size: 9px; font-weight: 600;
+  fill: var(--texte-doux); paint-order: stroke;
+  stroke: color-mix(in srgb, var(--c) 4%, var(--surface-2)); stroke-width: 3px;
+}
+
+/* Appareils */
+.res-noeud {
+  position: absolute; transform: translate(-50%, -50%); cursor: grab; touch-action: none;
+  display: flex; flex-direction: column; align-items: center; gap: .1rem;
+  width: 88px; padding: .5rem .35rem; text-align: center; user-select: none;
+  border-radius: var(--r-m); background: var(--surface); border: 1px solid var(--bord-fort);
+  box-shadow: var(--ombre-m); transition: box-shadow .12s, border-color .12s;
+}
+.res-noeud:hover { border-color: color-mix(in srgb, var(--c) 55%, var(--bord-fort)); box-shadow: var(--ombre-l); }
+.res-noeud:active { cursor: grabbing; }
+.res-noeud.actif { border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 26%, transparent); }
+.res-noeud.arme { border-color: var(--or); box-shadow: 0 0 0 3px color-mix(in srgb, var(--or) 34%, transparent); }
+.res-noeud-icone { font-size: 1.6rem; line-height: 1; pointer-events: none; }
+.res-noeud-nom { font-weight: 800; font-size: .88rem; color: var(--texte); pointer-events: none; }
+.res-noeud-type { font-size: .64rem; color: var(--texte-pale); text-transform: uppercase; letter-spacing: .05em; pointer-events: none; }
+
+/* Choix du port pendant le câblage */
+.res-ports {
+  display: flex; align-items: center; gap: .4rem; flex-wrap: wrap;
+  padding: .5rem .65rem; border-radius: var(--r-s);
+  background: var(--or-fond-2); border: 1px solid var(--or-bord); border-left: 3px solid var(--or);
+}
+.res-ports-titre { font-size: .85rem; font-weight: 700; color: var(--or-texte); }
+.res-ports .btn { font-family: var(--mono); }
+
+.res-x {
+  display: inline-grid; place-items: center; cursor: pointer;
+  border: 0; background: transparent; color: var(--texte-pale);
+  font-size: .8rem; line-height: 1; border-radius: var(--r-s);
+}
+.res-x:hover { color: var(--rouge); background: var(--rouge-fond); }
+.res-noeud-x { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; }
+
+/* Console : une fenêtre posée sur la scène, comme Packet Tracer. */
+.res-term {
+  position: absolute; right: .6rem; bottom: .6rem; z-index: 3;
+  width: min(480px, calc(100% - 1.2rem));
+  box-shadow: var(--ombre-l); touch-action: auto;
+  animation: apparait .16s ease both;
+}
+.res-term-sortie { min-height: 9rem; max-height: min(30vh, 13rem); }
+.res-term-fermer {
+  cursor: pointer; border: 0; background: transparent; color: #8B93A7;
+  font-size: .82rem; line-height: 1; padding: .2rem .3rem; border-radius: var(--r-s);
+}
+.res-term-fermer:hover { color: #fff; background: #2E3446; }
+
+.res-resultats { margin-top: 0; }
+.res-solution {
+  padding: .8rem .9rem; border-radius: var(--r-m);
+  background: var(--or-fond-2); border: 1px solid var(--or-bord);
+  display: flex; flex-direction: column; gap: .5rem;
+}
+.res-solution h4 {
+  font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--or-texte);
+}
+
 /* ---------------------- 12. Divers ---------------------------- */
 .toast {
   position: fixed; left: 50%; bottom: 2rem; transform: translate(-50%, 1rem);
@@ -1244,6 +1376,11 @@ body.dans-exercice .entete { display: none; }
   .themes { grid-template-columns: 1fr; }
   .jp-apercu-liste { grid-template-columns: 1fr; }
   .btn-reglages { right: .7rem; bottom: .7rem; }
+  .res-plan { height: clamp(300px, 52vh, 420px); }
+  .res-noeud { width: 74px; padding: .4rem .3rem; }
+  .res-noeud-icone { font-size: 1.35rem; }
+  .res-term { right: .4rem; left: .4rem; bottom: .4rem; width: auto; }
+  .res-vue-config.plein { padding: .4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

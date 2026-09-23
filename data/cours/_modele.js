@@ -239,5 +239,74 @@
    (Θ↔theta, ²↔^2, ·/×↔*, ⁄↔/), les * ( ) ignorés. Pour l'ordre des
    termes ou « n2 » sans exposant, ajouter les formes dans "accepte".
 
+
+   8) EXERCICE DE TYPE "reseau" (simulateur Cisco, moteur reseau-cisco.js)
+   -------------------------------------------------------------
+   Deux vues : l'ÉNONCÉ (principe, scénario, objectifs) dans la page, et
+   la SCÈNE de configuration qui s'ouvre EN PLEIN ÉCRAN (flèche en haut
+   à gauche, ou Échap, pour revenir ; la configuration est conservée).
+   La scène (plan façon Packet Tracer) contient des appareils :
+   routeurs, switches et PC. L'utilisateur peut en ajouter
+   (palette), les DÉPLACER librement (glisser-déposer), les relier
+   (bouton « Relier » : on clique l'appareil puis son port), puis
+   ouvrir la console de chacun — elle s'ouvre en fenêtre posée sur la
+   scène — pour taper les commandes Cisco IOS. Les câbles sont tracés
+   entre les appareils avec le nom des ports, en vert si les deux ports
+   sont allumés, en rouge pointillé sinon ; un clic sur un câble le
+   retire. Le bouton « Vérifier » simule le réseau (pings) : si tous
+   les tests passent, c'est validé. Score = tests réussis / nb de tests.
+
+   IOS reconnu (abréviations admises) — routeur / switch :
+     enable · configure terminal · hostname NOM · exit · end
+     interface g0/0 (ou g0/0.10) · ip address A.B.C.D M.M.M.M
+     no shutdown · shutdown · encapsulation dot1q VLAN (sous-interface)
+     ip route RESEAU MASQUE SAUT (routeur)
+     vlan N · name X · switchport mode access|trunk
+     switchport access vlan N (switch)
+     show ip interface brief · show ip route · show vlan brief · ping IP
+   PC (poste simplifié) : ip A.B.C.D M.M.M.M [PASSERELLE] · show ip · ping IP
+
+   {
+     type: "reseau",
+     id: "res-ex",                    // unique dans la matière
+     titre: "…",
+     description: "…",
+     cours: "…", exemple: { … },       // colonne de gauche (comme "code")
+     intro: ["Scénario…"],             // paragraphes / listes (blocsTexte)
+     consigne: "…",                    // chaîne ou blocsTexte
+     objectifs: ["`R1 g0/0` = …", …],  // liste à pastilles (texteRiche)
+
+     topologie: {                      // topologie de départ (souvent câblée)
+       appareils: [ // type : routeur | switch | pc
+                    // x, y : position sur le plan, en % (facultatif :
+                    //        placement automatique sinon)
+                    { nom: "R1",  type: "routeur", x: 30, y: 42 },
+                    { nom: "PC1", type: "pc",      x: 70, y: 42 } ],
+       liens: [ { de: "R1", deIf: "g0/0", vers: "PC1", versIf: "eth0" } ]
+     },
+     palette: ["routeur","switch","pc"], // types ajoutables (défaut : les 3)
+     verrouTopologie: false,           // true = ni ajout, ni câble, ni suppression
+
+     preconfig: { R2: ["enable","conf t", …] },  // config déjà en place au départ
+                                                 // (appliquée aussi par le vérificateur)
+
+     tests: [                          // pings de bout en bout (la validation)
+       { de: "PC1", vers: "PC2", attendu: true,  message: "PC1 joint PC2" },
+       { de: "PC1", vers: "PC3", attendu: false, message: "isolation VLAN" }
+     ],                                //  vers : nom d'appareil (→ son IP) ou IP littérale
+                                       //  attendu : true (défaut) ping réussi, false ping bloqué
+
+     solution: {                       // commandes par appareil (réussit tous les tests)
+       R1:  ["enable","configure terminal","interface g0/0", …],
+       PC1: ["ip 192.168.1.10 255.255.255.0 192.168.1.1"]
+     },
+     solutionTopologie: { appareils:[…], liens:[…] } // si l'utilisateur doit AUSSI
+                                       // construire la topologie (appliquée par le
+                                       // vérificateur par-dessus "topologie")
+   }
+   Contrôlé par node outils/verifier-exercices.js : avec la solution
+   (et solutionTopologie), TOUS les tests passent ; sans elle, au moins
+   un test échoue (exercice non trivial).
+
    Vérifier toutes les solutions : node outils/verifier-exercices.js
    ============================================================= */

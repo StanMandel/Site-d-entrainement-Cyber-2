@@ -18,6 +18,7 @@ const vm = require("vm");
 const racine = path.join(__dirname, "..");
 const VerifCode = require(path.join(racine, "assets/js/verif-code.js"));
 const MoteurTerminal = require(path.join(racine, "assets/js/terminal.js"));
+const MoteurReseau = require(path.join(racine, "assets/js/reseau-cisco.js"));
 const { looseReponse } = require(path.join(racine, "assets/js/probleme.js"));
 
 const bac = {};
@@ -74,6 +75,25 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
             signaler(slug + "/" + exo.id + " : problème " + (n + 1) + ", réponse incohérente");
           }
         });
+        continue;
+      }
+      if (exo.type === "reseau") {
+        verifies++;
+        const tests = exo.tests || [];
+        if (!tests.length) { signaler(slug + "/" + exo.id + " : exercice réseau sans test"); continue; }
+        if (!exo.solution) { signaler(slug + "/" + exo.id + " : exercice réseau sans solution"); continue; }
+        // La solution doit valider tous les tests.
+        const avec = MoteurReseau.construire(exo, {
+          topologie: exo.solutionTopologie || null,
+          configs: exo.solution
+        });
+        const bilan = MoteurReseau.verifierTests(avec, tests);
+        for (const b of bilan) if (!b.ok) signaler(slug + "/" + exo.id + " : la solution échoue — " + (b.message || "") + " (" + b.detail + ")");
+        // Sans la solution, au moins un test doit échouer (exercice non trivial).
+        const sans = MoteurReseau.construire(exo, null);
+        if (MoteurReseau.verifierTests(sans, tests).every((b) => b.ok)) {
+          signaler(slug + "/" + exo.id + " : le réseau est déjà validé sans la solution");
+        }
         continue;
       }
       if (exo.type !== "code") continue;

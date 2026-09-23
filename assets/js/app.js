@@ -102,6 +102,9 @@ const App = {
   rendre() {
     const route = decodeURIComponent(location.hash.replace(/^#\/?/, "")).split("/").filter(Boolean);
     vider(this.vue);
+    /* Le plein écran des exercices réseau fige le défilement : on le
+       libère à chaque navigation, au cas où l'on quitte par le hash. */
+    document.documentElement.style.overflow = "";
     window.scrollTo({ top: 0 });
     document.body.classList.toggle("dans-exercice", route[0] === "c" && !!route[2] && route[2] !== "g");
     this.accueil.classList.toggle("actif", route[0] !== "c");
@@ -506,6 +509,10 @@ const App = {
       const n = [].concat(exo.exercice || exo.exercices || []).length;
       return { libelle: "Mini-cours", taille: n + " à résoudre" };
     }
+    if (exo.type === "reseau") {
+      const n = (exo.tests || []).length;
+      return { libelle: "Réseau", taille: n + " test" + (n > 1 ? "s" : "") };
+    }
     return { libelle: exo.type || "Exercice", taille: "" };
   },
 
@@ -551,7 +558,7 @@ const App = {
       )
     ));
 
-    const classeScene = { qcm: "qcm", code: "code-exo", terminal: "term-exo", jetpunk: "jp", probleme: "probleme-exo" };
+    const classeScene = { qcm: "qcm", code: "code-exo", terminal: "term-exo", jetpunk: "jp", probleme: "probleme-exo", reseau: "res-exo" };
     const scene = el("div", {
       class: classeScene[exo.type] || "jp",
       style: { "--tc": cours.couleur }
@@ -575,10 +582,11 @@ const App = {
     else if (exo.type === "code") MoteurCode.lancer(scene, exo, contexte);
     else if (exo.type === "terminal") MoteurTerminal.lancer(scene, exo, contexte);
     else if (exo.type === "probleme") MoteurProbleme.lancer(scene, exo, contexte);
+    else if (exo.type === "reseau") MoteurReseau.lancer(scene, exo, contexte);
     else scene.append(el("div", { class: "vide" },
       el("div", { class: "emoji", texte: "🚧" }),
       el("h3", { texte: "Type d'exercice inconnu : " + exo.type }),
-      el("p", {}, "Les types disponibles sont ", el("code", { texte: "qcm" }), ", ", el("code", { texte: "jetpunk" }), ", ", el("code", { texte: "code" }), " et ", el("code", { texte: "terminal" }), ".")
+      el("p", {}, "Les types disponibles sont ", el("code", { texte: "qcm" }), ", ", el("code", { texte: "jetpunk" }), ", ", el("code", { texte: "code" }), ", ", el("code", { texte: "terminal" }), " et ", el("code", { texte: "reseau" }), ".")
     ));
   },
 
