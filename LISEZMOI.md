@@ -448,11 +448,15 @@ ne dépasse pas la taille de sa banque.
   sur les sections, les noms des registres et la syntaxe), mov et variables, calculs, bits, C aplati,
   conditions, boucles, tableaux, structures, puis traductions C → assembleur et
   assembleur → C.
-- **Complexité algorithmique** — 15 mini-cours à réponse saisie (`type: "probleme"`)
-  en 3 chapitres : comptage d'opérations sur du code C (séquences, tests au pire cas,
+- **Complexité algorithmique** — un guide de modèles de rédaction (preuves O/Ω/Θ,
+  par l'absurde, boucles, meilleur/pire cas, récurrences) et 23 mini-cours à réponse
+  saisie (`type: "probleme"`) en 4 chapitres : comptage d'opérations sur du code C (séquences, tests au pire cas,
   boucles simples et imbriquées, récursivité), notations de Landau (constante `c`,
   simplification de O/Ω/Θ, produit), puis analyse d'algorithmes (parcours, doubles
-  boucles, disjonction de cas, tri par sélection et par insertion). Chaque exercice
+  boucles, disjonction de cas, tri par sélection et par insertion), et une synthèse
+  plus difficile (bornes dépendantes, termes négatifs, preuves par l'absurde, boucles
+  logarithmiques, récurrences, seuils) dont chaque exemple est une rédaction modèle
+  suivie de plusieurs problèmes. Chaque exercice
   offre un exemple résolu, un problème similaire et une barre de saisie avec clavier
   de caractères spéciaux.
 - **Réseaux avancés** — 5 guides en micro-parties de cours (les couches et
