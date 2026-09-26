@@ -91,8 +91,8 @@ const MoteurProbleme = {
   _panneauExemple(ex) {
     const panneau = el("div", { class: "pb-panneau" });
 
-    if (ex.enonce || ex.code) {
-      panneau.append(this._carte("Problème", { texte: ex.enonce, code: ex.code, langage: ex.langage, legende: ex.legende }));
+    if (ex.enonce || ex.code || ex.schema) {
+      panneau.append(this._carte("Problème", { texte: ex.enonce, schema: ex.schema, code: ex.code, langage: ex.langage, legende: ex.legende }));
     }
     if (ex.formule) {
       panneau.append(this._carte(ex.formuleTitre || "Formule", { texte: ex.formule, classe: "pb-formule" }));
@@ -109,8 +109,16 @@ const MoteurProbleme = {
       el("h3", { texte: titre })
     );
     if (opts.texte) carte.append(...blocsTexte(opts.texte));
+    if (opts.schema) carte.append(...this._schemas(opts.schema));
     if (opts.code) carte.append(this._blocCode(opts.code, opts.langage, opts.legende));
     return carte;
+  },
+
+  /* Un ou plusieurs schémas SVG (assets/js/schemas.js), légende facultative. */
+  _schemas(spec) {
+    return [].concat(spec).map((s) => el("figure", { class: "pb-schema", html: Schemas.svg(s) },
+      s.legende ? el("figcaption", { html: texteRiche(s.legende) }) : null
+    ));
   },
 
   _blocCode(code, langage, legende) {
@@ -139,12 +147,117 @@ const MoteurProbleme = {
     const titre = multiple ? "Problème " + (index + 1) : "À vous de jouer";
     const carte = el("section", { class: "code-carte code-objectif" }, el("h3", { texte: titre }));
     if (item.enonce) carte.append(...blocsTexte(item.enonce));
+    if (item.schema) carte.append(...this._schemas(item.schema));
     if (item.code) carte.append(this._blocCode(item.code, item.langage, item.legende));
 
     const zone = el("div", { class: "pb-reaction" });
-    const barre = this._barre(conteneur, etat, item, zone);
+    const barre = item.champs ? this._champs(conteneur, etat, item, zone) : this._barre(conteneur, etat, item, zone);
     carte.append(barre, zone);
     return carte;
+  },
+
+  /* Plusieurs cases de réponse (champ « champs »), un seul « Vérifier ».
+     Une case juste est verrouillée ; le problème est réussi quand toutes
+     le sont. Après deux essais, « Voir la réponse » donne les valeurs. */
+  _champs(conteneur, etat, item, zone) {
+    let resolu = false;
+    let essais = 0;
+
+    const lignes = item.champs.map((champ) => {
+      const saisie = el("input", {
+        class: "jp-saisie pb-champ", type: "text",
+        autocomplete: "off", spellcheck: "false", autocapitalize: "off"
+      });
+      const ligne = el("label", { class: "pb-ligne" },
+        el("span", { class: "pb-libelle", html: texteRiche(champ.libelle || "Réponse") }),
+        el("span", { class: "pb-entree" }, saisie,
+          el("span", { class: "pb-unite", texte: champ.unite || "" }))
+      );
+      return { champ, saisie, ligne, bon: false };
+    });
+
+    const btnValider = el("button", { class: "btn btn-principal", type: "button" }, "Vérifier");
+
+    const verrouiller = () => {
+      resolu = true;
+      btnValider.disabled = true;
+      for (const l of lignes) l.saisie.disabled = true;
+    };
+
+    const valider = () => {
+      if (resolu) return;
+      const restants = lignes.filter((l) => !l.bon);
+      const vide = restants.find((l) => !l.saisie.value.trim());
+      if (vide) { vide.saisie.focus(); return; }
+      essais++;
+      for (const l of restants) {
+        l.saisie.classList.remove("flash-ko");
+        if (champCorrect(l.saisie.value, l.champ)) {
+          l.bon = true;
+          l.saisie.disabled = true;
+          l.saisie.classList.add("flash-ok");
+        } else {
+          void l.saisie.offsetWidth;
+          l.saisie.classList.add("flash-ko");
+        }
+      }
+      const faux = lignes.filter((l) => !l.bon);
+      if (!faux.length) {
+        verrouiller();
+        this._reactionChamps(zone, true, item);
+        this._compter(etat, true, conteneur);
+        return;
+      }
+      faux[0].saisie.focus();
+      this._reactionChamps(zone, false, item, { faux: faux.length, essais }, () => {
+        verrouiller();
+        for (const l of faux) l.saisie.classList.add("pb-revele");
+        this._reactionChamps(zone, "revele", item);
+        this._compter(etat, false, conteneur);
+      });
+    };
+
+    btnValider.addEventListener("click", valider);
+    for (const l of lignes) {
+      l.saisie.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); valider(); } });
+    }
+
+    return el("div", { class: "pb-saisie pb-champs" },
+      ...lignes.map((l) => l.ligne),
+      el("div", { class: "pb-valider" }, btnValider)
+    );
+  },
+
+  _reactionChamps(zone, bon, item, info, surRevele) {
+    vider(zone);
+    if (bon === true || bon === "revele") {
+      zone.append(el("div", { class: "explication" + (bon === true ? " ok" : "") },
+        el("b", { texte: bon === true ? "✓ Correct" : "Réponses attendues" }),
+        this._listeReponses(item)
+      ));
+      if (item.solution) zone.append(this._solution(item));
+      return;
+    }
+    const n = info.faux;
+    zone.append(el("div", { class: "explication" },
+      el("b", { texte: "✕ Pas encore — " }),
+      el("span", { texte: n + (n > 1 ? " réponses à corriger. " : " réponse à corriger. ") }),
+      item.indice ? el("span", { html: texteRiche(item.indice) }) : null
+    ));
+    if (info.essais >= 2) {
+      zone.append(el("button", { class: "btn btn-fantome btn-petit", type: "button", onclick: surRevele }, "Voir la réponse"));
+    }
+  },
+
+  _listeReponses(item) {
+    const liste = el("ul", { class: "pb-attendues" });
+    for (const champ of item.champs) {
+      liste.append(el("li", {},
+        el("span", { html: texteRiche(champ.libelle || "Réponse") + " : " }),
+        el("code", { texte: formaterReponse(champ) })
+      ));
+    }
+    return liste;
   },
 
   /* Barre de saisie : bouton « Caractères spéciaux », champ, « Vérifier ». */
@@ -334,7 +447,57 @@ function looseReponse(s) {
   return normeReponse(s).replace(/[*()]/g, "");
 }
 
+/* -------------------------------------------------------------
+   Cases de réponse (champ « champs »).
+   Réponse attendue numérique : la saisie est lue comme un nombre
+   (virgule ou point, « 5e-5 », « 5×10^-5 », « 10⁻⁵ », « 2/3 »,
+   unité recopiée tolérée) et comparée avec une tolérance relative
+   (champ « tolerance », 1 % par défaut). Réponse texte : comparaison
+   souple de looseReponse.
+   ------------------------------------------------------------- */
+const EXPOSANTS = { "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4", "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9", "⁻": "-", "⁺": "+" };
+
+function lireNombre(saisie, unite) {
+  let s = String(saisie ?? "").toLowerCase()
+    .replace(/[\s  ]/g, "")
+    .replace(/µ/g, "u")
+    .replace(/[−–]/g, "-")
+    .replace(/,/g, ".")
+    .replace(/10([⁻⁺]?[⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g, (_, e) => "10^" + [...e].map((c) => EXPOSANTS[c]).join(""));
+  if (unite) {
+    const u = String(unite).toLowerCase().replace(/\s/g, "").replace(/µ/g, "u");
+    if (u && s.endsWith(u) && s.length > u.length) s = s.slice(0, -u.length);
+  }
+  const nombre = "[-+]?(?:\\d+\\.?\\d*|\\.\\d+)(?:e[-+]?\\d+)?";
+  let m;
+  if ((m = s.match(new RegExp("^(" + nombre + ")$")))) return Number(m[1]);
+  if ((m = s.match(new RegExp("^(" + nombre + ")[×·x*]10\\^\\(?([-+]?\\d+)\\)?$")))) return Number(m[1]) * 10 ** Number(m[2]);
+  if ((m = s.match(/^10\^\(?([-+]?\d+)\)?$/))) return 10 ** Number(m[1]);
+  if ((m = s.match(new RegExp("^(" + nombre + ")/(" + nombre + ")$"))) && Number(m[2]) !== 0) return Number(m[1]) / Number(m[2]);
+  return null;
+}
+
+function champCorrect(saisie, champ) {
+  const attendues = [].concat(champ.reponse, champ.accepte || []).filter((r) => r != null);
+  if (typeof champ.reponse === "number") {
+    const v = lireNombre(saisie, champ.unite);
+    if (v === null || !Number.isFinite(v)) return false;
+    const tol = champ.tolerance ?? 0.01;
+    return attendues.some((a) => Math.abs(v - a) <= Math.max(Math.abs(a) * tol, 1e-12));
+  }
+  const g = looseReponse(saisie);
+  return !!g && attendues.some((a) => looseReponse(a) === g);
+}
+
+/* Réponse attendue telle qu'affichée : « 0,6 », « 20 kHz ». */
+function formaterReponse(champ) {
+  const r = typeof champ.reponse === "number"
+    ? String(champ.reponse).replace(".", ",")
+    : String(champ.reponse);
+  return champ.unite ? r + " " + champ.unite : r;
+}
+
 /* Export pour le vérificateur Node (aucun accès au DOM au chargement). */
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { normeReponse, looseReponse };
+  module.exports = { normeReponse, looseReponse, lireNombre, champCorrect, formaterReponse };
 }

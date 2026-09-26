@@ -20,8 +20,9 @@ node outils/verifier-exercices.js
 Seule vérification automatisée. Elle charge les fichiers `data/` dans l'ordre des balises
 `<script>` de `index.html` et contrôle que chaque exercice `code` réussit avec sa
 `solution` et échoue avec son code de `depart`, que les réponses des QCM désignent des
-choix existants, que chaque `tirage` tient dans sa banque et que les `id` sont uniques
-par matière. À lancer après toute
+choix existants, que chaque `tirage` tient dans sa banque, que chaque case `champs`
+d'un `probleme` accepte sa propre réponse, que chaque `schema` se dessine et que les
+`id` sont uniques par matière. À lancer après toute
 modification d'exercice ou des moteurs d'exécution.
 
 Pour tester un seul exercice ou un moteur, utiliser les modules directement sous Node
@@ -59,6 +60,13 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
 - `code.js` — `MoteurCode` : exercices de programmation (éditeur à coloration maison,
   bouton ▶, résultats). Définit aussi `cartesPrincipe()`, réutilisée par `qcm.js` pour
   afficher `cours`/`exemple` à gauche des questions.
+- `probleme.js` — `MoteurProbleme` : onglets Exemple / Exercice, réponse saisie. Un
+  problème a soit une `reponse` (une barre + clavier de symboles), soit des `champs`
+  (une case par réponse, nombres comparés avec `tolerance` relative via `lireNombre` /
+  `champCorrect`, exportés pour le vérificateur).
+- `schemas.js` — `Schemas.svg(spec)` : schémas SVG du champ `schema` des problèmes
+  (spectre, am, fm, numerique, constellation, trame, bus, chaine). Chaîne SVG pure,
+  sans DOM ; couleurs via les classes `sch-*` de `style.css`.
 
 **Exécution du code des exercices** (sans DOM, utilisable sous Node) :
 - `asm-x86.js` — `AsmX86` : assembleur + émulateur x86-64 syntaxe AT&T (sous-ensemble du

@@ -239,6 +239,26 @@
    (Θ↔theta, ²↔^2, ·/×↔*, ⁄↔/), les * ( ) ignorés. Pour l'ordre des
    termes ou « n2 » sans exposant, ajouter les formes dans "accepte".
 
+   Plusieurs cases de réponse : "champs" remplace "reponse" (un seul
+   bouton « Vérifier », une case juste se verrouille) :
+     exercice: {
+       enonce: "…",
+       schema: { type: "spectre", unite: "kHz", raies: [{ f: 650, a: 40 }] },
+       champs: [
+         { libelle: "Porteuse", reponse: 650, unite: "kHz" },  // nombre :
+         { libelle: "Taux `m`", reponse: 0.6, tolerance: 0.02 }, // tolérance
+         { libelle: "Message", reponse: "1010" },                // relative,
+         { libelle: "Mot", reponse: "0x2D", accepte: ["2D"] }    // 1 % par défaut
+       ],
+       indice: "…", solution: ["…"]
+     }
+   Saisie numérique : virgule, 5e-5, 5×10^-5, 10⁻⁵, 2/3, unité recopiée.
+
+   Schémas SVG (assets/js/schemas.js) : "schema" (objet ou tableau)
+   dans exemple ou exercice, "legende" facultative. Types : spectre,
+   am, fm, numerique, constellation, trame, bus, chaine. Paramètres
+   de chaque type : voir LISEZMOI.md et data/cours/electronique-3.js.
+
 
    8) EXERCICE DE TYPE "reseau" (simulateur Cisco, moteur reseau-cisco.js)
    -------------------------------------------------------------

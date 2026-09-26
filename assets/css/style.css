@@ -1273,6 +1273,62 @@ body.dans-exercice .entete { display: none; }
 .pb-solution p, .pb-solution ul { color: var(--texte-doux); font-size: .9rem; }
 .pb-solution .code-intertitre { margin-top: 0; }
 
+/* Cases de réponse multiples */
+.pb-champs { display: flex; flex-direction: column; gap: .55rem; }
+.pb-ligne {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px);
+  align-items: center; gap: .4rem 1rem;
+  padding: .55rem .7rem; border-radius: var(--r-m);
+  background: var(--surface-2); border: 1px solid var(--bord);
+}
+.pb-libelle { color: var(--texte); font-size: .95rem; }
+.pb-entree { display: flex; align-items: center; gap: .5rem; }
+.pb-entree .pb-champ { min-width: 0; }
+.pb-unite { flex: 0 0 4.6rem; font-family: var(--mono); font-size: .9rem; font-weight: 700; color: var(--texte-doux); white-space: nowrap; }
+.pb-champs .pb-champ.flash-ok:disabled { opacity: 1; }
+.pb-champ.pb-revele { border-color: var(--rouge-bord); background: var(--rouge-fond); }
+.pb-valider { display: flex; justify-content: flex-end; }
+.pb-attendues { margin: .4rem 0 0 1.1rem; display: flex; flex-direction: column; gap: .2rem; }
+.pb-attendues li { color: var(--texte); }
+@media (max-width: 640px) {
+  .pb-ligne { grid-template-columns: 1fr; }
+}
+
+/* Schémas SVG (assets/js/schemas.js) */
+.pb-schema {
+  margin: .8rem 0 0; padding: .7rem; overflow-x: auto;
+  background: var(--surface-2); border: 1px solid var(--bord); border-radius: var(--r-m);
+}
+.pb-schema figcaption { margin-top: .4rem; text-align: center; font-size: .85rem; color: var(--texte-doux); }
+.sch { display: block; width: 100%; max-width: 680px; height: auto; margin: 0 auto; overflow: visible; }
+.sch-txt { fill: var(--texte); font-family: var(--mono); font-size: 12px; }
+.sch-txt-doux { fill: var(--texte-doux); }
+.sch-txt-fort { font-weight: 700; }
+.sch-halo { paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+.sch-axe { stroke: var(--texte-doux); stroke-width: 1.3; fill: none; }
+.sch-pointe { fill: var(--texte-doux); }
+.sch-grille { stroke: color-mix(in srgb, var(--bord-fort) 70%, transparent); stroke-width: .8; }
+.sch-repere { stroke: var(--bord); stroke-width: 1; stroke-dasharray: 2 3; }
+.sch-ecran { fill: var(--surface); stroke: var(--bord-fort); stroke-width: 1; }
+.sch-trace { stroke: var(--c); stroke-width: 1.6; fill: none; stroke-linejoin: round; }
+.sch-trace-forte { stroke-width: 2.4; }
+.sch-modulant { stroke: var(--or); stroke-width: 2; fill: none; }
+.sch-enveloppe { stroke: var(--or); stroke-width: 1.5; stroke-dasharray: 6 4; fill: none; }
+.sch-raie { stroke: var(--c); stroke-width: 3; }
+.sch-point { fill: var(--c); }
+.sch-cote { stroke: var(--texte-pale); stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+.sch-cote-forte { stroke: var(--rouge); stroke-width: 1.5; }
+.sch-accolade { stroke: var(--texte-pale); stroke-width: 1.2; fill: none; }
+.sch-case { fill: var(--surface); stroke: var(--texte-doux); stroke-width: 1.2; }
+.sch-boite { fill: var(--surface); stroke: var(--bord-fort); stroke-width: 1.3; }
+.sch-boite-forte { fill: color-mix(in srgb, var(--c) 12%, var(--teinte)); stroke: var(--c); }
+.sch-fil { stroke: var(--c); stroke-width: 2; fill: none; }
+.sch-fil-fin { stroke-width: 1.3; }
+.sch-fil-alim { stroke: var(--rouge); }
+.sch-fil-ss { stroke: var(--or); }
+.sch-noeud { fill: var(--c); }
+.sch-resistance { fill: var(--surface); stroke: var(--texte-doux); stroke-width: 1.2; }
+
 /* ------------------ 14. Réglages et thèmes -------------------- */
 .btn-reglages {
   position: fixed; right: 1rem; bottom: 1rem; z-index: 90;

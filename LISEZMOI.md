@@ -23,6 +23,7 @@ assets/js/verif-code.js     exécution des tests des exercices de programmation
 assets/js/code.js           page des exercices de programmation (éditeur, résultats)
 assets/js/terminal.js       moteur des exercices « terminal » (commandes à taper)
 assets/js/reseau-cisco.js   simulateur Cisco (topologie, IOS, ping) + moteur « reseau »
+assets/js/schemas.js        schémas SVG des problèmes (spectre, chronogrammes, constellation…)
 assets/js/probleme.js       moteur des mini-cours à réponse saisie
 assets/js/app.js            onglets, routage, rendu des pages
 data/cours.js               liste des 14 matières (nom, couleur, emoji)
@@ -317,6 +318,50 @@ ignorés — `O(n log n)`, `O(nlogn)` et `O(n·log(n))` sont donc équivalents. 
 autres variantes (ordre des termes, `n2` sans exposant…), lister les formes dans
 `accepte`.
 
+**Plusieurs cases de réponse — `champs`.** À la place de `reponse`, un problème peut
+porter une liste de cases, chacune avec son libellé et son unité, vérifiées d'un seul
+clic. Une case juste se verrouille en vert ; le problème est réussi quand toutes le
+sont, et « Voir la réponse » apparaît après deux essais.
+
+```js
+exercice: {
+  enonce: "…",
+  schema: { type: "spectre", unite: "kHz", raies: [{ f: 640, a: 12 }, { f: 650, a: 40 }] },
+  champs: [
+    { libelle: "Fréquence de la porteuse", reponse: 650, unite: "kHz" },
+    { libelle: "Taux de modulation `m`", reponse: 0.6, tolerance: 0.02 },
+    { libelle: "Message binaire", reponse: "1010010111" },
+    { libelle: "Mot reçu (hexadécimal)", reponse: "0x2D", accepte: ["2D", "2Dh"] }
+  ],
+  indice: "…",
+  solution: ["…"]
+}
+```
+
+Une `reponse` **numérique** est comparée avec une tolérance relative (`tolerance`,
+1 % par défaut, `0` pour un entier exact) ; la saisie accepte la virgule, `5e-5`,
+`5×10^-5`, `10⁻⁵`, `2/3` et l'unité recopiée. Une `reponse` **texte** suit la
+comparaison souple ci-dessus.
+
+**Schémas — `schema`.** `exemple.schema` et `exercice.schema` (un objet ou un tableau)
+ajoutent sous l'énoncé un dessin SVG généré par `assets/js/schemas.js`, aux couleurs
+du thème ; `legende` (facultatif) s'affiche dessous. Types disponibles :
+
+- `spectre` : `raies: [{ f, a, etiquette? }]`, `unite`, `uniteY` ;
+- `am` : `A`, `m`, `cycles`, `periodes`, `cotes: "crete" | "cc"`,
+  `etiquettes: { max, min, minNeg, maxNeg }` ;
+- `fm` : `cycles`, `periodes`, `beta` ;
+- `numerique` : `modulation: "ask" | "ook" | "fsk" | "psk"`, `bits`, `carreauxParBit`,
+  `cycles` (nombre, ou `{ 0: c0, 1: c1 }` en FSK), `phases` (degrés, un par bit),
+  `entete` (`"1????0"`, `?` = case vide ; `false` = pas d'en-tête), `echelle` ;
+- `constellation` : `points: [{ i, q, etiquette? }]`, `cercle`, `rayon`,
+  `graduations: [[valeur, "libellé"]]` ;
+- `trame` : `segments: [{ bits, role }]`, `niveaux: { haut, bas }`, `inverse` (RS-232),
+  `afficherBits`, `afficherRoles` ;
+- `bus` : `protocole: "i2c" | "spi"`, `esclaves: [{ nom, detail? }]` ;
+- `chaine` : `blocs` (`"Titre\nDétail"`), `liens` (libellés des flèches), `accent`
+  (indice du bloc mis en avant).
+
 ### 6. Configuration réseau Cisco — `type: "reseau"`
 
 La page montre d'abord l'**énoncé** (principe, scénario, objectifs) avec un bouton
@@ -393,7 +438,8 @@ node outils/verifier-exercices.js
 
 Le script vérifie que chaque solution de programmation réussit tous ses tests, que
 chaque code de départ échoue, que la solution de chaque objectif « terminal » valide
-ses propres motifs, que chaque exercice « probleme » a une réponse attendue cohérente,
+ses propres motifs, que chaque exercice « probleme » a une réponse attendue cohérente (chaque case de
+`champs` accepte sa propre réponse et ses variantes, chaque `schema` se dessine),
 que chaque exercice « reseau » est validé par sa solution (et **non** validé sans
 elle), que les réponses des QCM désignent des choix existants et que chaque `tirage`
 ne dépasse pas la taille de sa banque.
@@ -431,6 +477,14 @@ ne dépasse pas la taille de sa banque.
 
 ## Contenu déjà en place
 
+- **Électronique et Électricité 3** — 6 chapitres qui suivent les cours : modulation
+  d'amplitude, modulation de fréquence, modulations numériques (ASK, FSK, PSK et DBPSK,
+  constellations, QAM, MSK), chaîne physique et supports de transmission, liaisons
+  série (UART, RS-232, I2C, SPI) et alimentation des data centers. Chaque chapitre
+  s'ouvre sur un QCM de questions de cours (7 QCM en tout), puis enchaîne des exercices
+  `probleme` de difficulté croissante (25) : l'onglet Exemple reprend un exercice du
+  cours résolu (énoncé, schéma, rédaction, réponse), l'onglet Exercice propose un cas
+  voisin un peu plus exigeant, avec une case par réponse.
 - **Fondamentaux du système Windows** — trois banques de QCM (historique et
   architecture, identités et contrôle d'accès, services, stockage et protection),
   15 questions tirées par partie, et un examen blanc de 20 questions tirées parmi

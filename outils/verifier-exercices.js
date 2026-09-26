@@ -4,7 +4,8 @@
    Lancer depuis le dossier du site :   node outils/verifier-exercices.js
    Pour chaque QCM : les réponses désignent des choix existants.
    Pour chaque QCM ou jeu : le « tirage » tient dans la banque.
-   Pour chaque « probleme » : chaque problème a une réponse cohérente.
+   Pour chaque « probleme » : chaque problème (ou chaque case de
+   « champs ») a une réponse cohérente, et chaque schéma se dessine.
    Pour chaque exercice de programmation :
      - la solution doit réussir tous les tests ;
      - le code de départ ne doit pas réussir ;
@@ -19,7 +20,8 @@ const racine = path.join(__dirname, "..");
 const VerifCode = require(path.join(racine, "assets/js/verif-code.js"));
 const MoteurTerminal = require(path.join(racine, "assets/js/terminal.js"));
 const MoteurReseau = require(path.join(racine, "assets/js/reseau-cisco.js"));
-const { looseReponse } = require(path.join(racine, "assets/js/probleme.js"));
+const { looseReponse, champCorrect, formaterReponse } = require(path.join(racine, "assets/js/probleme.js"));
+const Schemas = require(path.join(racine, "assets/js/schemas.js"));
 
 const bac = {};
 vm.createContext(bac);
@@ -66,8 +68,29 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
       if (exo.type === "probleme") {
         const items = [].concat(exo.exercice || exo.exercices || []);
         if (!items.length) signaler(slug + "/" + exo.id + " : exercice « probleme » sans problème à résoudre");
+        const schemas = [exo.exemple && exo.exemple.schema, ...items.map((it) => it.schema)];
+        for (const spec of schemas.flatMap((s) => [].concat(s || []))) {
+          try {
+            if (!/^<svg/.test(Schemas.svg(spec))) signaler(slug + "/" + exo.id + " : schéma « " + spec.type + " » vide");
+          } catch (e) {
+            signaler(slug + "/" + exo.id + " : schéma invalide — " + e.message);
+          }
+        }
         items.forEach((it, n) => {
           verifies++;
+          if (it.champs) {
+            if (!it.champs.length) signaler(slug + "/" + exo.id + " : problème " + (n + 1) + " sans case de réponse");
+            it.champs.forEach((c, k) => {
+              const ou = slug + "/" + exo.id + " : problème " + (n + 1) + ", case " + (k + 1);
+              if (c.reponse == null || String(c.reponse).trim() === "") { signaler(ou + " sans réponse attendue"); return; }
+              if (typeof c.reponse === "number" && !Number.isFinite(c.reponse)) { signaler(ou + ", réponse non finie"); return; }
+              // La réponse attendue, telle qu'affichée, et chaque variante acceptée doivent être validées.
+              for (const r of [formaterReponse(c), ...[].concat(c.accepte || []).map(String)]) {
+                if (!champCorrect(r, c)) signaler(ou + ", « " + r + " » n'est pas acceptée");
+              }
+            });
+            return;
+          }
           const reps = [].concat(it.reponse).filter((r) => r != null && String(r).trim() !== "");
           if (!reps.length) { signaler(slug + "/" + exo.id + " : problème " + (n + 1) + " sans réponse attendue"); return; }
           // La réponse attendue doit se valider elle-même (invariant de normalisation).

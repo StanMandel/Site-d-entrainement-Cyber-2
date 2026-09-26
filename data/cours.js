@@ -78,7 +78,7 @@ window.COURS = [
     court: "Électronique 3",
     emoji: "⚡",
     couleur: "#E0A800",
-    description: "Circuits, régimes transitoires, filtres et composants actifs."
+    description: "Modulations AM, FM et numériques, supports de transmission, liaisons série et alimentation des data centers."
   },
   {
     slug: "osint",
