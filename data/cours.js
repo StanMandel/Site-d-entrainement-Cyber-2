@@ -119,6 +119,14 @@ window.COURS = [
     emoji: "🧩",
     couleur: "#B9314F",
     description: "Désassemblage, analyse statique et dynamique, formats binaires."
+  },
+  {
+    slug: "securite-web",
+    nom: "Sécurité des applications web (DVWA)",
+    court: "Sécu. web",
+    emoji: "🕷️",
+    couleur: "#D7263D",
+    description: "Injection de commandes, injection SQL, XSS, inclusion de fichiers : exploitation en labo DVWA et corrections."
   }
 ];
 

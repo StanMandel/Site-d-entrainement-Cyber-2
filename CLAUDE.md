@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projet
 
-Site statique de révision pour les cours EPITA (14 matières), entièrement en français
+Site statique de révision pour les cours EPITA (15 matières), entièrement en français
 (interface, contenu, noms de variables et commentaires). Aucun build, aucune dépendance,
 aucun serveur : `index.html` s'ouvre directement dans le navigateur (`Lancer le site.bat`).
 La documentation complète du format des données est dans `LISEZMOI.md` et
