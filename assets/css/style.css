@@ -1002,6 +1002,13 @@ body.dans-exercice .entete { display: none; }
   font-size: .87rem; color: var(--or-texte);
 }
 .term-obj-indice[hidden] { display: none; }
+.term-obj-lieu {
+  margin: 0 0 .55rem; padding: .45rem .7rem; border-radius: var(--r-s);
+  background: color-mix(in srgb, var(--c) 12%, var(--fond-2));
+  border: 1px solid var(--bord); border-left: 3px solid var(--c);
+  font-size: .84rem; color: var(--texte);
+}
+.term-obj-lieu b { color: var(--c); }
 
 /* Fenêtre du terminal (colonne de droite) */
 .term {
@@ -1033,6 +1040,7 @@ body.dans-exercice .entete { display: none; }
 .term-ok { color: #6FCF97; font-weight: 600; }
 .term-ko { color: #EB8A82; }
 .term-objectif-ligne { color: #7FB2FF; margin: .3rem 0; }
+.term-lieu-ligne { color: #E3B341; margin: .3rem 0 .1rem; font-weight: 600; }
 .term-bloc {
   margin: .2rem 0 .5rem; padding: .55rem .75rem;
   background: #0E1119; border-left: 2px solid #2E3446; border-radius: var(--r-s);

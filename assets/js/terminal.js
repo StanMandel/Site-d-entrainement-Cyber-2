@@ -18,8 +18,14 @@
        motifs:   ["^nxc\\s+smb", "-u\\s", "-p\\s"], // tous obligatoires
        interdire:["--shares"],                     // facultatif
        solution: "nxc smb 10.0.0.5 -u a -p b",      // commande modèle
-       sortie:   "SMB  10.0.0.5  …"                 // sortie simulée
+       sortie:   "SMB  10.0.0.5  …",                // sortie simulée
+       lieu:     "Hôte : VM Debian (analyst)",      // où l'on se trouve (facultatif)
+       invite:   "root@ctf-ch1:/#"                  // nouvelle invite dès cet objectif (facultatif)
      }
+
+   Les champs `lieu` et `invite` permettent de matérialiser un déplacement
+   dans l'arbre (hôte → conteneur → pod → control-plane) : `lieu` s'affiche
+   dans le panneau et le terminal, `invite` change l'invite du shell.
 
    Utilisation (navigateur) :
      MoteurTerminal.lancer(conteneur, exercice, {
@@ -94,8 +100,10 @@
       autocomplete: "off", autocapitalize: "off", autocorrect: "off",
       "aria-label": "Ligne de commande"
     });
+    const inviteSpan = el("span", { class: "term-invite", texte: etat.invite });
+    etat.inviteSpan = inviteSpan;
     const ligne = el("label", { class: "term-ligne" },
-      el("span", { class: "term-invite", texte: etat.invite }),
+      inviteSpan,
       saisie
     );
     const term = el("div", { class: "term" },
@@ -218,6 +226,10 @@
   };
 
   MoteurTerminal._banniereObjectif = function (etat) {
+    const objectif = etat.objectifs[etat.index];
+    if (objectif && objectif.lieu) {
+      this._imprimer(etat, "[location] " + objectif.lieu, "term-lieu-ligne");
+    }
     this._imprimer(etat, "[*] Objective " + (etat.index + 1) + " / " + etat.objectifs.length + " — see the goal in the left panel.", "term-objectif-ligne");
   };
 
@@ -227,12 +239,19 @@
     const objectif = etat.objectifs[etat.index];
     const panneau = vider(etat.panneau);
 
+    // Déplacement dans l'arbre : mettre à jour l'invite du shell si l'objectif en fournit une.
+    if (objectif.invite) {
+      etat.invite = objectif.invite;
+      if (etat.inviteSpan) etat.inviteSpan.textContent = objectif.invite;
+    }
+
     panneau.append(
       el("div", { class: "term-obj-tete" },
         el("h3", { texte: "Objectif" }),
         el("span", { class: "puce", texte: (etat.index + 1) + " / " + etat.objectifs.length })
       ),
       el("div", { class: "term-jauge" }, el("i", { style: { width: (etat.index / etat.objectifs.length) * 100 + "%" } })),
+      objectif.lieu ? el("p", { class: "term-obj-lieu" }, el("b", { texte: "📍 Vous êtes ici — " }), el("span", { html: texteRiche(objectif.lieu) })) : null,
       el("p", { class: "term-obj-enonce", html: texteRiche(objectif.enonce) })
     );
 
