@@ -2047,4 +2047,233 @@
     ]
   });
 
+  /* =========================================================
+     GUIDE — Installer et surveiller son environnement
+     ========================================================= */
+  C.guides.push({
+    id: "installer-surveiller",
+    titre: "Installer et surveiller son environnement",
+    resume: "Monter la boîte à outils (Docker, k3s, Helm, Trivy, htop) sur Ubuntu — à la main ou avec un script — puis surveiller conteneurs et cluster. Deux tableaux de commandes et un script d'installation à télécharger.",
+    duree: "15 min",
+    niveau: "Débutant",
+    prealables: [
+      "Une machine Ubuntu (ou VM) sur laquelle vous avez les droits `sudo`.",
+      "Un usage limité à un environnement de test ou de TP autorisé."
+    ],
+    sections: [
+      {
+        type: "partie",
+        titre: "Installation",
+        texte: "Deux voies : le **script** tout-en-un (téléchargez, lisez, exécutez) ou l'**installation à la main**, commande par commande, pour comprendre ce qui se passe. Les deux visent Ubuntu et n'installent rien en double."
+      },
+      {
+        titre: "Script d'installation (Ubuntu)",
+        texte: "Installe Docker, k3s, Helm, Trivy, htop, procps et nginx. Idempotent : chaque outil n'est posé que s'il manque. Sources officielles uniquement ; k3s et Helm sont **téléchargés puis exécutés**, pas passés en `curl | bash` aveugle.",
+        telechargements: [
+          {
+            nom: "installer-conteneurs.sh",
+            source: "installateur-outils-conteneurs",
+            legende: "**Ubuntu** : `bash installer-conteneurs.sh`. N'utilise `sudo` qu'au besoin. Rouvrez un terminal ensuite (PATH + groupe `docker`)."
+          }
+        ],
+        points: [
+          "**Outils posés :** `docker`, `k3s`/`kubectl`, `helm`, `trivy`, `htop`, `procps` (top/ps/free), `nginx`.",
+          "**Sans doublon :** chaque outil est testé (`command -v`) avant installation.",
+          "**Vérif rapide après coup :** `docker ps` · `kubectl get nodes` · `trivy --version`."
+        ]
+      },
+      {
+        titre: "Installation à la main",
+        texte: "Ce que le script fait, étape par étape. `<paquet>` s'installe avec `sudo apt install -y <paquet>` sur Ubuntu.",
+        tableau: {
+          entetes: ["Outil", "Commande d'installation"],
+          lignes: [
+            ["Outils système", "`sudo apt update && sudo apt install -y htop procps nginx curl`"],
+            ["Docker", "`sudo apt install -y docker.io docker-compose-v2` puis `sudo usermod -aG docker $USER`"],
+            ["k3s (Kubernetes)", "`curl -sfL https://get.k3s.io -o k3s.sh` → `less k3s.sh` → `sudo sh k3s.sh`"],
+            ["kubeconfig", "`mkdir -p ~/.kube && sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config && sudo chown $USER ~/.kube/config`"],
+            ["Helm", "`curl -fsSL -o helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3` → `chmod 700 helm.sh` → `./helm.sh`"],
+            ["Trivy", "dépôt APT officiel Aqua Security, puis `sudo apt install -y trivy`"]
+          ]
+        },
+        remarque: "Pour k3s et Helm on **télécharge d'abord** le script officiel (on peut le lire avec `less`), puis on l'exécute — jamais `curl … | sh` directement.",
+        attention: "Après l'ajout au groupe `docker`, déconnectez-vous/reconnectez-vous (ou `newgrp docker`) sinon `docker ps` répond « permission denied »."
+      },
+      {
+        type: "partie",
+        titre: "Surveiller (monitoring)",
+        texte: "Auditer, c'est d'abord **observer** : charge de la machine, processus, et ce que consomment conteneurs et pods. Un cryptominer ou un reverse shell se repère souvent ici avant tout le reste."
+      },
+      {
+        titre: "Surveiller l'hôte et les conteneurs",
+        texte: "De la machine (`htop`, `top`, `procps`) jusqu'au conteneur (`docker stats`, `docker logs`). Tout se tape **depuis l'hôte**.",
+        tableau: {
+          entetes: ["Commande", "Ce qu'elle montre"],
+          lignes: [
+            ["`htop`", "Processus interactifs : CPU/RAM par processus, tri, recherche (`F3`), tuer (`F9`)"],
+            ["`top`", "Équivalent non interactif toujours présent (`procps`) ; `q` pour quitter"],
+            ["`ps aux --sort=-%cpu | head`", "Les processus les plus gourmands en CPU (repère un mineur)"],
+            ["`free -h`", "Mémoire disponible / utilisée (`procps`)"],
+            ["`docker stats`", "CPU/RAM/réseau/E-S **par conteneur**, en direct"],
+            ["`docker top web`", "Les processus tournant DANS le conteneur `web`"],
+            ["`docker logs -f web`", "Suit la sortie du conteneur (erreurs, requêtes, connexions)"],
+            ["`docker events`", "Flux des événements du démon (create/start/exec/die) en temps réel"]
+          ]
+        },
+        remarque: "Signal d'alerte classique : un conteneur `web` qui tourne à 100 % de CPU sans trafic, ou dont `docker top` montre un `sh -i`/`bash -i` inattendu."
+      },
+      {
+        titre: "Surveiller le cluster Kubernetes",
+        texte: "Les mêmes réflexes, un cran au-dessus : le cluster. `kubectl top` exige que **metrics-server** soit présent (natif sur k3s).",
+        tableau: {
+          entetes: ["Commande", "Ce qu'elle montre"],
+          lignes: [
+            ["`kubectl top nodes`", "CPU/RAM consommés par chaque nœud"],
+            ["`kubectl top pods -A`", "CPU/RAM par pod, tous namespaces (`-A`)"],
+            ["`kubectl get pods -A -o wide`", "État et nœud de chaque pod (repère un `CrashLoopBackOff`)"],
+            ["`kubectl logs -f <pod>`", "Suit les logs d'un pod ; `-p` pour l'instance précédente"],
+            ["`kubectl get events -A --sort-by=.lastTimestamp`", "Derniers événements du cluster (créations, échecs, évictions)"],
+            ["`kubectl describe pod <pod>`", "Détail d'un pod : montages, variables, sondes, raisons d'échec"]
+          ]
+        },
+        attention: "Si `kubectl top` répond « Metrics API not available », c'est que `metrics-server` n'est pas prêt — sur k3s, attendez qu'il démarre ; ailleurs, installez-le."
+      }
+    ]
+  });
+
+  /* =========================================================
+     GUIDE — Les configurations YAML (manifests Kubernetes)
+     ========================================================= */
+  C.guides.push({
+    id: "guide-yaml",
+    titre: "Écrire une configuration YAML (manifests Kubernetes)",
+    resume: "La structure d'un manifest, les objets courants avec leur apiVersion, un exemple commenté, et les champs de durcissement (securityContext, resources, probes, NetworkPolicy). Tableaux de champs et fiche de bonnes pratiques.",
+    duree: "25 min",
+    niveau: "Intermédiaire",
+    prealables: [
+      "Avoir un cluster (k3s) et `kubectl` configuré — voir « Installer et surveiller son environnement ».",
+      "Savoir déployer un manifest : `kubectl apply -f fichier.yaml`."
+    ],
+    sections: [
+      {
+        type: "partie",
+        titre: "La structure d'un manifest",
+        texte: "Un manifest décrit **l'état souhaité** d'une ressource. Quatre champs de tête reviennent toujours ; le reste dépend du `kind`."
+      },
+      {
+        titre: "Les quatre champs de tête",
+        texte: "Présents dans presque tous les manifests, quel que soit l'objet.",
+        tableau: {
+          entetes: ["Champ", "Rôle"],
+          lignes: [
+            ["`apiVersion`", "Version de l'API Kubernetes qui gère cet objet (varie selon le `kind`)"],
+            ["`kind`", "Type de ressource : `Pod`, `Deployment`, `Service`, `Ingress`, `ConfigMap`…"],
+            ["`metadata`", "Nom (`name`), `namespace`, `labels` et `annotations`"],
+            ["`spec`", "La spécification proprement dite — son contenu dépend du `kind`"]
+          ]
+        },
+        remarque: "`kubectl explain deployment.spec` (ou n'importe quel chemin) documente chaque champ depuis le terminal, sans quitter le shell."
+      },
+      {
+        titre: "Objets courants et leur apiVersion",
+        texte: "La bonne `apiVersion` dépend du `kind` — l'erreur la plus fréquente au premier `apply`.",
+        tableau: {
+          entetes: ["kind", "apiVersion", "À quoi ça sert"],
+          lignes: [
+            ["`Pod`", "`v1`", "La plus petite unité : un ou plusieurs conteneurs"],
+            ["`Deployment`", "`apps/v1`", "Maintient N réplicas d'une application (via un ReplicaSet)"],
+            ["`Service`", "`v1`", "Expose des pods : `ClusterIP`, `NodePort` ou `LoadBalancer`"],
+            ["`Ingress`", "`networking.k8s.io/v1`", "Route HTTP/HTTPS externe (`domaine → service`)"],
+            ["`ConfigMap` / `Secret`", "`v1`", "Configuration / secrets (Secret = base64, **pas** chiffré)"],
+            ["`NetworkPolicy`", "`networking.k8s.io/v1`", "Filtre le trafic réseau entre pods"]
+          ]
+        },
+        attention: "Un `Secret` Kubernetes n'est encodé qu'en **base64**, pas chiffré. Qui lit l'objet lit le secret : chiffrez au repos (etcd) et limitez l'accès par RBAC."
+      },
+      {
+        titre: "Exemple commenté — un Deployment",
+        texte: "Le squelette d'un déploiement à 3 réplicas. `selector.matchLabels` doit correspondre **exactement** aux `labels` du `template`.",
+        code: [
+          "apiVersion: apps/v1",
+          "kind: Deployment",
+          "metadata:",
+          "  name: mon-app",
+          "  labels: { app: mon-app }",
+          "spec:",
+          "  replicas: 3",
+          "  selector:",
+          "    matchLabels: { app: mon-app }   # doit matcher template.labels",
+          "  template:",
+          "    metadata:",
+          "      labels: { app: mon-app }",
+          "    spec:",
+          "      containers:",
+          "        - name: web",
+          "          image: nginx:1.27-alpine   # jamais :latest en prod",
+          "          ports: [ { containerPort: 80 } ]"
+        ].join("\n")
+      },
+      {
+        type: "partie",
+        titre: "Durcir un manifest",
+        texte: "Un manifest « qui marche » n'est pas un manifest sûr. Voici les champs qui réduisent la surface d'attaque — ceux qu'un audit vérifie en premier."
+      },
+      {
+        titre: "securityContext — le cœur du durcissement",
+        texte: "Se place sur le pod (`spec.securityContext`) et/ou le conteneur (`containers[].securityContext`).",
+        tableau: {
+          entetes: ["Champ", "Valeur sûre", "Effet"],
+          lignes: [
+            ["`runAsNonRoot`", "`true`", "Refuse de démarrer si l'image tourne en root"],
+            ["`runAsUser`", "`1000` (≠ 0)", "Force un UID non privilégié"],
+            ["`allowPrivilegeEscalation`", "`false`", "Bloque tout gain de privilège (SUID, etc.)"],
+            ["`privileged`", "`false`", "Jamais `true` : privileged = accès quasi total à l'hôte"],
+            ["`readOnlyRootFilesystem`", "`true`", "Racine du conteneur en lecture seule (écrire via un volume)"],
+            ["`capabilities`", "`drop: [ALL]`", "Retire toutes les capabilities Linux, on rajoute au besoin"]
+          ]
+        },
+        code: [
+          "        securityContext:",
+          "          runAsNonRoot: true",
+          "          runAsUser: 1000",
+          "          allowPrivilegeEscalation: false",
+          "          readOnlyRootFilesystem: true",
+          "          capabilities:",
+          "            drop: [ \"ALL\" ]"
+        ].join("\n")
+      },
+      {
+        titre: "Bonnes pratiques — la checklist",
+        texte: "Ce qu'un manifest de production devrait toujours contenir.",
+        tableau: {
+          entetes: ["Bonne pratique", "Pourquoi"],
+          lignes: [
+            ["Tag d'image figé (`nginx:1.27-alpine`)", "`:latest` rend le déploiement non reproductible et masque les CVE"],
+            ["`resources.requests` **et** `limits`", "Évite qu'un pod affame le nœud (CPU/RAM) ; requis pour l'autoscaling"],
+            ["Sondes `liveness` / `readiness`", "K8s redémarre un pod bloqué et n'envoie du trafic qu'aux pods prêts"],
+            ["`securityContext` durci", "Non-root, no-escalation, FS en lecture seule, capabilities minimales"],
+            ["`NetworkPolicy` « deny par défaut »", "Sans elle, tout pod parle à tout pod (mouvement latéral libre)"],
+            ["Secrets hors du manifest", "Ne pas committer un `Secret` en clair ; référencer, ne pas coder en dur"]
+          ]
+        },
+        remarque: "Testez un manifest **sans l'appliquer** : `kubectl apply --dry-run=server -f f.yaml` (validation côté serveur) et `kubectl explain <chemin>` pour la doc des champs."
+      },
+      {
+        titre: "NetworkPolicy — refuser puis autoriser",
+        texte: "Le patron « deny par défaut » : on bloque tout le trafic entrant d'un namespace, puis on n'ouvre que le nécessaire avec d'autres policies.",
+        code: [
+          "apiVersion: networking.k8s.io/v1",
+          "kind: NetworkPolicy",
+          "metadata:",
+          "  name: default-deny-ingress",
+          "  namespace: prod",
+          "spec:",
+          "  podSelector: {}          # tous les pods du namespace",
+          "  policyTypes: [ Ingress ] # aucun trafic entrant autorisé"
+        ].join("\n"),
+        attention: "Une `NetworkPolicy` n'a d'effet que si le CNI la supporte. Sur k3s le CNI par défaut (flannel) ne l'applique pas ; installez Calico ou Cilium pour un filtrage réel."
+      }
+    ]
+  });
+
 })();

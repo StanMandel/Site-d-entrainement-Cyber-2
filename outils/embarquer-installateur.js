@@ -24,7 +24,8 @@ const idx = path.join(racine, "index.html");
 
 const fichiers = [
   { id: "installateur-outils-windows", src: "outils/installer-outils.cmd" },
-  { id: "installateur-outils-linux", src: "outils/installer-outils.sh" }
+  { id: "installateur-outils-linux", src: "outils/installer-outils.sh" },
+  { id: "installateur-outils-conteneurs", src: "outils/installer-conteneurs.sh" }
 ];
 
 const DEBUT = "  <!-- SCRIPTS-INSTALLATION-DEBUT : régénérer avec outils/embarquer-installateur.js -->";
