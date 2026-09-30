@@ -1,0 +1,4 @@
+# Installation npm locale : le site n'a aucune dépendance
+node_modules/
+package.json
+package-lock.json
