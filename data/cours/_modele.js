@@ -328,5 +328,90 @@
    (et solutionTopologie), TOUS les tests passent ; sans elle, au moins
    un test échoue (exercice non trivial).
 
+
+
+   9) EXERCICE DE TYPE "lecon" (moteur assets/js/lecon.js)
+   -------------------------------------------------------------
+   Une leçon complète en cinq onglets : Cours (étapes avec Précédent /
+   Suivant), Problématique, Exemple, Correction, Exercices. Chaque étape
+   du cours DOIT avoir un schéma (contrôlé par le vérificateur).
+
+   Contenu riche (texte, questions, correction, explication…) :
+   chaîne = paragraphe ; tableau = liste à pastilles ; { titre } ;
+   { entetes, lignes } ; { schema } ; { redaction: [...] } (encadré
+   « Rédaction ») ; { code, legende } ; { remarque } ; { attention }.
+
+   Schémas : un objet ou un tableau (affichés côte à côte), de type
+   "graphe" ou "matrice" (assets/js/graphes.js), ou un type de
+   assets/js/schemas.js. Graphe en écriture compacte :
+     { type: "graphe", oriente: false,
+       sommets: "1:0,1 2:1,0 3:1,1",    // nom:x,y (unités de grille)
+                                         // ou "1 2 3" + disposition: "cercle"
+       aretes: "1-2 2-3",                // arcs : "1>2" ; poids : "1-2:5"
+       marques: { "1": "a", "1-2": "b" },// a bleu, b or, c vert, d rouge, e pâle
+       groupes: ["1 2", "3"],            // une couleur par groupe
+       etiquettes: { "1": "d=2" },       // petit texte près d'un sommet
+       carres: "c1 c2",                  // sommets carrés (graphe de Tanner)
+       courbes: { "3>5": 30 },           // courbure imposée (px)
+       legende: "…" }
+   Matrice : { type: "matrice", graphe: {…}, puissance: 2 } (adjacence
+   calculée) ou { type: "matrice", lignes: "1 2", colonnes: "1 2",
+   valeurs: [[0,1],[1,0]], marques: { "1,2": "a", "l:1": "b", "c:2": "b" } }.
+
+   {
+     type: "lecon",
+     id: "gm-degres",
+     titre: "Sommets, arêtes, voisins et degrés",
+     description: "…",
+     cours: [                          // étapes, une à la fois
+       { titre: "…", texte: [ … ], schema: { type: "graphe", … },
+         redaction: ["Rédaction modèle…"] }
+     ],
+     problematique: { texte: [ … ], schema },
+     exemple: { texte: [ … ], schema, questions: ["…", "…"] },
+     correction: { texte: [ { titre: "1. …" }, { redaction: [ … ] }, { schema } ] },
+     exercices: [                      // niveau 1 à 4 (4 = au-delà du TD),
+                                       // dans l'ordre croissant
+       { type: "qcm", niveau: 1, titre, enonce, schema,
+         choix: ["…", "…"], reponse: 1 | [0, 2], explication },
+       { type: "champs", niveau: 1, enonce, schema, champs: [
+           { libelle: "`d(1)`", reponse: 3, tolerance: 0 },      // nombre
+           { libelle: "`N(3)`", reponse: "{1, 5, 7}", ensemble: true },
+           { libelle: "Ordre", reponse: "1 2 3", suite: true },  // ordre compte
+           { libelle: "CFC", reponse: "{1,2},{3}", partition: true },
+           { libelle: "…", reponse: "non", accepte: ["…"] } ],
+         indice, explication },
+       // Exercices sur graphe : graphe = { sommets, aretes?, oriente? }.
+       // Correction par règles (Graphes.evaluer) ou réponse exacte (attendu).
+       { type: "construire", niveau: 2, enonce, graphe: { sommets: "…" },
+         depart: "1-2",                // arêtes déjà tracées (facultatif)
+         attendu: "1-2 2-3",           // ou bien des règles :
+         regles: [ { regle: "regulier", k: 3 }, { regle: "connexe" } ],
+         solution: "…",                // obligatoire avec des règles
+         indice, explication },
+       //   règles : egal, nbAretes, degres, regulier, demiDegres, connexe,
+       //   composantes, sansCycle, avecCycle, arbre, biparti (parts),
+       //   couplageParfait, fortementConnexe, cfc, contient, inclus,
+       //   sansCycleLongueur, tournoi, arborescence (racine) ; chaque règle
+       //   accepte un message personnalisé.
+       { type: "selection", cible: "aretes" | (sommets par défaut), graphe,
+         regles: [ { regle: "clique", maximum: true } ], solution: "…" },
+       //   sommets : egal, taille, clique, stable (taille / maximum),
+       //   couverture (minimum), composante (contient), cfc, partie ;
+       //   arêtes : egal, couplage (taille / maximum / parfait),
+       //   arbreCouvrant, cycle (longueur).
+       { type: "ordre", graphe, regles: [ { regle: "parcours", depart: "1" } ] },
+       //   egal (suite), parcours (depart, complet), chaine (de, vers,
+       //   longueur, min, ferme, simple, elementaire, passePar),
+       //   topologique, augmentant (couplage).
+       { type: "matrice", graphe, puissance: 2, max: 3 },  // ou lignes,
+       //   colonnes et attendu: [[…]] ; un clic fait tourner la case 0 → max.
+       { type: "remettre", etapes: ["1re étape", "2e", "…"] }  // dans l'ordre
+     ]
+   }
+   Contrôlé par node outils/verifier-exercices.js : schéma à chaque étape,
+   schémas dessinables, niveaux croissants, chaque solution acceptée et
+   chaque départ refusé, chaque case de réponse acceptant sa réponse.
+
    Vérifier toutes les solutions : node outils/verifier-exercices.js
    ============================================================= */

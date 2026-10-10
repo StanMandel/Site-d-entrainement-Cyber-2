@@ -21,8 +21,10 @@ Seule vérification automatisée. Elle charge les fichiers `data/` dans l'ordre 
 `<script>` de `index.html` et contrôle que chaque exercice `code` réussit avec sa
 `solution` et échoue avec son code de `depart`, que les réponses des QCM désignent des
 choix existants, que chaque `tirage` tient dans sa banque, que chaque case `champs`
-d'un `probleme` accepte sa propre réponse, que chaque `schema` se dessine et que les
-`id` sont uniques par matière. À lancer après toute
+d'un `probleme` accepte sa propre réponse, que chaque `schema` se dessine, que les
+`id` sont uniques par matière, et pour chaque `lecon` qu'un schéma illustre chaque
+étape du cours et que chaque exercice sur graphe accepte sa `solution` et refuse son
+état de départ. À lancer après toute
 modification d'exercice ou des moteurs d'exécution.
 
 Pour tester un seul exercice ou un moteur, utiliser les modules directement sous Node
@@ -67,6 +69,14 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
 - `schemas.js` — `Schemas.svg(spec)` : schémas SVG du champ `schema` des problèmes
   (spectre, am, fm, numerique, constellation, trame, bus, chaine). Chaîne SVG pure,
   sans DOM ; couleurs via les classes `sch-*` de `style.css`.
+- `lecon.js` — `MoteurLecon` : leçons en cinq onglets (cours pas à pas avec
+  schéma et rédaction, problématique, exemple, correction, exercices `qcm`,
+  `champs`, `construire`, `selection`, `ordre`, `matrice`, `remettre`).
+- `graphes.js` — `Graphes` (sans DOM, exporté pour Node) : lecture de l'écriture
+  compacte des graphes, algorithmes (parcours en profondeur au format du CM3,
+  Kosaraju, biparti, cliques, couplages…), dessin SVG des types `graphe` et
+  `matrice` (classes `g-*`), et `evaluer(exo, reponse)` qui corrige les exercices
+  sur graphe par règles.
 
 **Exécution du code des exercices** (sans DOM, utilisable sous Node) :
 - `asm-x86.js` — `AsmX86` : assembleur + émulateur x86-64 syntaxe AT&T (sous-ensemble du

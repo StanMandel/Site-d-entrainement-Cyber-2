@@ -6,6 +6,10 @@
    Pour chaque QCM ou jeu : le « tirage » tient dans la banque.
    Pour chaque « probleme » : chaque problème (ou chaque case de
    « champs ») a une réponse cohérente, et chaque schéma se dessine.
+   Pour chaque « lecon » : chaque étape du cours a un schéma, tous les
+   schémas se dessinent, les niveaux des exercices ne décroissent pas,
+   chaque exercice sur graphe est validé par sa solution et refusé
+   au départ, chaque case accepte sa propre réponse.
    Pour chaque exercice de programmation :
      - la solution doit réussir tous les tests ;
      - le code de départ ne doit pas réussir ;
@@ -22,6 +26,7 @@ const MoteurTerminal = require(path.join(racine, "assets/js/terminal.js"));
 const MoteurReseau = require(path.join(racine, "assets/js/reseau-cisco.js"));
 const { looseReponse, champCorrect, formaterReponse } = require(path.join(racine, "assets/js/probleme.js"));
 const Schemas = require(path.join(racine, "assets/js/schemas.js"));
+const Graphes = require(path.join(racine, "assets/js/graphes.js"));
 
 const bac = {};
 vm.createContext(bac);
@@ -100,6 +105,10 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
         });
         continue;
       }
+      if (exo.type === "lecon") {
+        verifierLecon(slug + "/" + exo.id, exo);
+        continue;
+      }
       if (exo.type === "reseau") {
         verifies++;
         const tests = exo.tests || [];
@@ -136,6 +145,77 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
       if (depart.ok) signaler(slug + "/" + exo.id + " : le code de départ réussit déjà");
     }
   }
+}
+
+/* ---------------- Leçons (moteur assets/js/lecon.js) ---------------- */
+
+/* Tous les schémas contenus dans un objet de données, à toute profondeur. */
+function schemasDe(donnee, liste = []) {
+  if (Array.isArray(donnee)) donnee.forEach((d) => schemasDe(d, liste));
+  else if (donnee && typeof donnee === "object") {
+    for (const [cle, val] of Object.entries(donnee)) {
+      if (cle === "schema") liste.push(...[].concat(val));
+      else if (cle !== "graphe") schemasDe(val, liste);
+    }
+  }
+  return liste;
+}
+
+function verifierLecon(ou, lecon) {
+  const etapes = lecon.cours || [];
+  if (!etapes.length) signaler(ou + " : leçon sans étape de cours");
+  etapes.forEach((e, k) => { if (!e.schema) signaler(ou + " : l'étape " + (k + 1) + " du cours n'a pas de schéma"); });
+  for (const partie of ["problematique", "exemple", "correction"]) if (!lecon[partie]) signaler(ou + " : partie « " + partie + " » absente");
+  for (const spec of schemasDe([lecon.cours, lecon.problematique, lecon.exemple, lecon.correction, lecon.exercices])) {
+    try {
+      const svg = spec.type === "graphe" || spec.type === "matrice" ? Graphes.svg(spec) : Schemas.svg(spec);
+      if (!/^<svg/.test(svg)) signaler(ou + " : schéma « " + spec.type + " » vide");
+    } catch (e) {
+      signaler(ou + " : schéma invalide — " + e.message);
+    }
+  }
+  const exos = lecon.exercices || [];
+  if (!exos.length) signaler(ou + " : leçon sans exercice");
+  let niveau = 0;
+  exos.forEach((exo, n) => {
+    const ici = ou + " : exercice " + (n + 1);
+    verifies++;
+    if ((exo.niveau || 1) < niveau) signaler(ici + " : niveau " + exo.niveau + " après un niveau " + niveau);
+    niveau = Math.max(niveau, exo.niveau || 1);
+    try {
+      if (exo.type === "qcm") {
+        const bonnes = [].concat(exo.reponse);
+        if (!bonnes.length || bonnes.some((i) => !Number.isInteger(i) || i < 0 || i >= (exo.choix || []).length)) signaler(ici + " : réponse hors des choix");
+      } else if (exo.type === "champs") {
+        if (!(exo.champs || []).length) signaler(ici + " : aucune case");
+        (exo.champs || []).forEach((c, k) => {
+          if (c.reponse == null || String(c.reponse).trim() === "") { signaler(ici + ", case " + (k + 1) + " sans réponse"); return; }
+          const formes = [String(c.reponse), ...[].concat(c.accepte || []).map(String)];
+          if (typeof c.reponse === "number") formes.push(formaterReponse(c));
+          for (const r of formes) if (!Graphes.champJuste(r, c)) signaler(ici + ", case " + (k + 1) + " : « " + r + " » n'est pas acceptée");
+        });
+      } else if (["construire", "selection", "ordre"].includes(exo.type)) {
+        Graphes.graphe(exo.graphe);
+        const sol = Graphes.solution(exo);
+        if (!sol) signaler(ici + " : aucune solution (champ « solution » ou réponse attendue)");
+        else {
+          const r = Graphes.evaluer(exo, sol);
+          if (!r.ok) signaler(ici + " : la solution est refusée — " + r.message);
+        }
+        const depart = exo.type === "construire" ? Graphes.jetons(exo.depart).map((j) => { const m = j.match(/^(.+?)([>\-])(.+)$/); return Graphes.cle(m[1], m[3], m[2] === ">"); }) : [];
+        if (Graphes.evaluer(exo, depart).ok) signaler(ici + " : l'exercice est déjà résolu au départ");
+      } else if (exo.type === "matrice") {
+        const voulu = Graphes.matriceAttendue(exo);
+        const zero = voulu.map((l) => l.map(() => 0));
+        if (Graphes.evaluer(exo, zero).ok) signaler(ici + " : la matrice nulle est déjà la réponse");
+        if (!Graphes.evaluer(exo, voulu).ok) signaler(ici + " : la matrice attendue est refusée");
+      } else if (exo.type === "remettre") {
+        if ((exo.etapes || []).length < 3) signaler(ici + " : au moins trois étapes à remettre dans l'ordre");
+      } else signaler(ici + " : type inconnu « " + exo.type + " »");
+    } catch (e) {
+      signaler(ici + " : " + e.message);
+    }
+  });
 }
 
 console.log(verifies + " exercices de programmation vérifiés, " + problemes + " problème(s).");

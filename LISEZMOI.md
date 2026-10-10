@@ -25,6 +25,8 @@ assets/js/terminal.js       moteur des exercices « terminal » (commandes à ta
 assets/js/reseau-cisco.js   simulateur Cisco (topologie, IOS, ping) + moteur « reseau »
 assets/js/schemas.js        schémas SVG des problèmes (spectre, chronogrammes, constellation…)
 assets/js/probleme.js       moteur des mini-cours à réponse saisie
+assets/js/graphes.js        graphes et matrices : dessin SVG, algorithmes, correction
+assets/js/lecon.js          moteur des leçons (cours pas à pas, exemple, exercices)
 assets/js/app.js            onglets, routage, rendu des pages
 data/cours.js               liste des 14 matières (nom, couleur, emoji)
 data/cours/<slug>.js        LE CONTENU : guides, chapitres et exercices
@@ -430,6 +432,32 @@ vérificateur : avec la solution (et `solutionTopologie`), tous les tests doiven
 passer ; sans elle, au moins un doit échouer, ce qui garantit que l'exercice n'est pas
 déjà résolu au départ.
 
+### 7. Leçon complète — `type: "lecon"`
+
+Une leçon se parcourt en **cinq onglets** : **Cours** (explications pas à pas,
+boutons Précédent / Suivant, chaque étape illustrée d'un schéma et suivie de sa
+**rédaction** modèle), **Problématique**, **Exemple**, **Correction** rédigée, puis
+**Exercices** de difficulté croissante (niveaux ★ à ★★★★, le dernier allant
+au-delà du TD). Les exercices sont de sept sortes :
+
+- `qcm` (une ou plusieurs bonnes réponses) et `champs` (cases de réponse :
+  nombre, texte, `ensemble` où l'ordre ne compte pas, `suite`, `partition`) ;
+- `construire` : tracer un graphe en cliquant deux sommets (un clic sur une
+  arête l'efface) ;
+- `selection` : choisir des sommets ou des arêtes (clique, stable, couplage,
+  composante, arbre couvrant…) ;
+- `ordre` : cliquer des sommets dans l'ordre (parcours en profondeur, chaîne,
+  cycle, chaîne augmentante, ordre topologique) ;
+- `matrice` : remplir une matrice case par case ;
+- `remettre` : remettre les étapes d'une démonstration dans l'ordre.
+
+Les exercices sur graphe sont corrigés par des **règles** (`regulier`,
+`connexe`, `biparti`, `clique`, `couplage`, `parcours`…) : toute réponse juste
+est acceptée, avec un message qui dit ce qui ne va pas. Les graphes et matrices
+s'écrivent en une ligne (`sommets: "1:0,1 2:1,0"`, `aretes: "1-2 2>3"`) et sont
+dessinés par `assets/js/graphes.js`. Format complet : `data/cours/_modele.js`
+(section 9).
+
 Après tout ajout ou modification, lancer depuis le dossier du site :
 
 ```
@@ -441,7 +469,8 @@ chaque code de départ échoue, que la solution de chaque objectif « terminal �
 ses propres motifs, que chaque exercice « probleme » a une réponse attendue cohérente (chaque case de
 `champs` accepte sa propre réponse et ses variantes, chaque `schema` se dessine),
 que chaque exercice « reseau » est validé par sa solution (et **non** validé sans
-elle), que les réponses des QCM désignent des choix existants et que chaque `tirage`
+elle), que chaque leçon a un schéma à chaque étape et des exercices sur graphe
+acceptant leur solution et refusant leur état de départ, que les réponses des QCM désignent des choix existants et que chaque `tirage`
 ne dépasse pas la taille de sa banque.
 
 ## Points d'attention
@@ -513,6 +542,14 @@ ne dépasse pas la taille de sa banque.
   suivie de plusieurs problèmes. Chaque exercice
   offre un exemple résolu, un problème similaire et une barre de saisie avec clavier
   de caractères spéciaux.
+- **Introduction aux graphes et aux matrices** — 20 leçons en 10 chapitres qui
+  suivent les CM1 à CM3 et les TD1 et TD2 : graphes non orientés et orientés
+  (degrés, poignées de main, chaînes, chemins), connexité et forte connexité,
+  graphes complets, cliques, stables, bipartis, couplages, arbres, parcours en
+  profondeur (tableaux au format du CM3, types d'arcs), numérotations et
+  Kosaraju-Sharir, matrices d'adjacence et leurs puissances, graphes de Tanner
+  et codes LDPC, puis une synthèse. 154 exercices interactifs, du niveau
+  « application directe » au niveau « au-delà du TD ».
 - **Réseaux avancés** — 5 guides en micro-parties de cours (les couches et
   l'encapsulation, l'adressage IPv4 et les sous-réseaux, la commutation et les VLAN,
   le routage IP, et une fiche technique Cisco IOS) ; 4 QCM de théorie + un jeu de

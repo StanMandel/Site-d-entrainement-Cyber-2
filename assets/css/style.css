@@ -1453,3 +1453,218 @@ body.dans-exercice .entete { display: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms; transition-duration: .01ms; }
 }
+
+/* ------------------ 14. Leçons et graphes --------------------- */
+.type-lecon { background: color-mix(in srgb, #2BB673 14%, var(--teinte)); color: color-mix(in srgb, #2BB673 66%, var(--ombrage)); }
+
+.lecon-exo { --c: var(--tc); margin-top: 1rem; display: flex; flex-direction: column; gap: .9rem; }
+
+/* Onglets numérotés Cours → Exercices */
+.lc-onglets {
+  display: flex; flex-wrap: wrap; gap: .3rem; padding: .3rem;
+  background: var(--fond-2); border: 1px solid var(--bord); border-radius: var(--r-m);
+  align-self: flex-start; scroll-margin-top: 1rem;
+}
+.lc-onglet {
+  display: inline-flex; align-items: center; gap: .5rem;
+  padding: .45rem .95rem .45rem .5rem; border-radius: var(--r-s);
+  border: 1px solid transparent; background: transparent; cursor: pointer;
+  font-size: .9rem; font-weight: 750; color: var(--texte-doux);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.lc-onglet:hover { color: var(--texte); }
+.lc-onglet-num {
+  display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: var(--r-s);
+  font-size: .75rem; font-weight: 800;
+  background: color-mix(in srgb, var(--c) 14%, var(--teinte));
+  color: color-mix(in srgb, var(--c) 72%, var(--ombrage));
+}
+.lc-onglet.actif {
+  background: var(--surface); border-color: var(--bord); box-shadow: var(--ombre-s);
+  color: color-mix(in srgb, var(--c) 78%, var(--ombrage));
+}
+.lc-onglet.actif .lc-onglet-num { background: var(--c); color: #fff; }
+
+.lc-panneau { display: flex; flex-direction: column; gap: .8rem; }
+.lc-nav { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.lc-nav .espace { flex: 1; }
+.lc-nav-exo { margin-top: 1.1rem; padding-top: .8rem; border-top: 1px solid color-mix(in srgb, var(--c) 22%, var(--bord)); }
+
+/* Cours pas à pas */
+.lc-points { display: flex; flex-wrap: wrap; gap: .35rem; }
+.lc-point {
+  width: 32px; height: 32px; border-radius: var(--r-s); cursor: pointer;
+  border: 1.5px solid var(--bord); background: var(--surface);
+  font-size: .82rem; font-weight: 800; color: var(--texte-pale);
+}
+.lc-point.vu { color: color-mix(in srgb, var(--c) 72%, var(--ombrage)); border-color: color-mix(in srgb, var(--c) 35%, var(--bord)); }
+.lc-point.actif { background: var(--c); border-color: var(--c); color: #fff; }
+.lc-etape { animation: apparait .2s ease both; }
+.lc-etape-titre, .lc-exo-titre { margin-top: .35rem; font-size: 1.25rem; }
+.lc-etape-corps {
+  display: grid; gap: 1.1rem; align-items: start; margin-top: .3rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.lc-etape-texte > p, .lc-carte > p, .lc-exo > p, .lc-redaction p, .lc-questions p { color: var(--texte); font-size: .95rem; }
+.lc-etape-texte .code-puces, .lc-carte .code-puces, .lc-exo .code-puces { color: var(--texte); }
+.lc-etape-schema .lc-figures { margin-top: .45rem; }
+
+/* Rédaction modèle */
+.lc-redaction {
+  margin-top: 1rem; padding: .85rem 1rem .95rem; border-radius: var(--r-m);
+  background: color-mix(in srgb, var(--or) 7%, var(--teinte));
+  border: 1px solid var(--or-bord); border-left: 4px solid var(--or);
+}
+.lc-redaction h4 {
+  font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--or-texte);
+}
+.lc-redaction p { margin-top: .4rem; line-height: 1.6; }
+.lc-redaction .code-intertitre { border-top-color: var(--or-bord); }
+
+.lc-encadre {
+  margin-top: .8rem; padding: .7rem .9rem; border-radius: var(--r-s);
+  background: color-mix(in srgb, var(--c) 6%, var(--teinte)); border: 1px solid color-mix(in srgb, var(--c) 22%, var(--bord));
+}
+.lc-encadre p { margin-top: 0; color: var(--texte); font-size: .9rem; }
+.lc-encadre p + p { margin-top: .35rem; }
+.lc-attention { background: var(--rouge-fond); border-color: var(--rouge-bord); }
+.lc-attention p { color: var(--rouge-texte); }
+.lc-pseudo { margin-top: .6rem; white-space: pre; overflow-x: auto; }
+
+.lc-questions { margin: .6rem 0 0; padding-left: 1.3rem; display: flex; flex-direction: column; gap: .3rem; }
+.lc-questions li::marker { color: var(--c); font-weight: 800; }
+.lc-questions li p { margin-top: 0; }
+
+/* Figures */
+.lc-figures { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .8rem; }
+.lc-figures .lc-figure { flex: 1 1 260px; margin: 0; min-width: 0; }
+.lc-figures-multi .lc-figure { flex-basis: 220px; }
+
+/* Exercices : pastilles et cartes */
+.lc-pastilles { display: flex; flex-wrap: wrap; gap: .35rem; }
+.lc-pastille {
+  display: inline-flex; align-items: baseline; gap: .35rem; padding: .35rem .6rem;
+  border-radius: var(--r-s); border: 1.5px solid var(--bord); background: var(--surface); cursor: pointer;
+  font-size: .82rem; color: var(--texte-doux);
+}
+.lc-pastille span { font-size: .66rem; letter-spacing: -.05em; color: var(--or); }
+.lc-pastille.actif { border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 22%, transparent); color: var(--texte); }
+.lc-pastille.ok { background: var(--vert-fond); border-color: var(--vert-bord); color: var(--vert-texte); }
+.lc-pastille.ko { background: var(--rouge-fond); border-color: var(--rouge-bord); color: var(--rouge-texte); }
+.lc-pastille.ok.actif { border-color: var(--vert); }
+.lc-pastille.ko.actif { border-color: var(--rouge); }
+
+.lc-exo-tete { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.lc-niveau {
+  margin-left: auto; padding: .14rem .5rem; border-radius: var(--r-s);
+  font-size: .72rem; font-weight: 750;
+  background: color-mix(in srgb, var(--or) 14%, var(--teinte)); color: var(--or-texte);
+}
+.lc-niveau-4 { background: color-mix(in srgb, var(--rouge) 13%, var(--teinte)); color: var(--rouge-texte); }
+.lc-widget { margin-top: .9rem; }
+.lc-qcm { margin-top: 0; }
+.lc-attendu { margin-top: .35rem; }
+.lc-indice { color: var(--texte-doux); }
+
+/* Graphe interactif */
+.lc-widget-graphe {
+  padding: .6rem; border-radius: var(--r-m);
+  background: var(--surface); border: 1px solid color-mix(in srgb, var(--c) 25%, var(--bord));
+}
+.lc-graphe { overflow-x: auto; user-select: none; -webkit-user-select: none; }
+.lc-graphe .sch { max-width: min(100%, 560px); }
+.lc-graphe-outils {
+  display: flex; align-items: center; gap: .45rem; flex-wrap: wrap;
+  margin-top: .5rem; padding-top: .55rem; border-top: 1px solid var(--bord);
+}
+.lc-graphe-outils .espace { flex: 1; }
+.lc-graphe-etat { font-family: var(--mono); font-size: .86rem; color: var(--texte); white-space: pre-wrap; }
+
+/* Matrice à remplir */
+.lc-matrice-cadre { overflow-x: auto; }
+.lc-matrice { border-collapse: separate; border-spacing: 3px; margin: 0 auto; }
+.lc-matrice th { font-family: var(--mono); font-size: .85rem; color: var(--texte-doux); padding: 0 .35rem; }
+.lc-case {
+  width: 38px; height: 34px; border-radius: var(--r-s); cursor: pointer;
+  font-family: var(--mono); font-weight: 800; font-size: .95rem;
+  border: 1.5px solid var(--bord); background: var(--surface-2); color: var(--texte-pale);
+}
+.lc-case-1 { background: color-mix(in srgb, var(--c) 16%, var(--teinte)); border-color: var(--c); color: color-mix(in srgb, var(--c) 75%, var(--ombrage)); }
+.lc-case:disabled { cursor: default; }
+.lc-case-faux { border-color: var(--rouge); box-shadow: inset 0 0 0 2px var(--rouge-bord); }
+
+/* Rédaction à remettre dans l'ordre */
+.lc-remettre-liste { margin: 0; padding-left: 1.6rem; display: flex; flex-direction: column; gap: .35rem; min-height: 1rem; }
+.lc-remettre-liste li::marker { color: var(--c); font-weight: 800; }
+.lc-remettre-reserve {
+  display: flex; flex-direction: column; gap: .35rem; margin-top: .7rem; padding: .6rem;
+  border: 1.5px dashed var(--bord-fort); border-radius: var(--r-m);
+}
+.lc-remettre-item {
+  width: 100%; text-align: left; padding: .55rem .75rem; cursor: pointer;
+  border-radius: var(--r-s); border: 1px solid var(--bord); background: var(--surface);
+  font-size: .9rem; line-height: 1.45; color: var(--texte);
+}
+.lc-remettre-item:hover:not(:disabled) { border-color: var(--c); }
+.lc-remettre-item.choisi { background: color-mix(in srgb, var(--c) 7%, var(--teinte)); border-color: color-mix(in srgb, var(--c) 35%, var(--bord)); }
+.lc-remettre-item:disabled { cursor: default; }
+.lc-remettre-item code {
+  font-family: var(--mono); font-size: .85em; background: var(--fond-2);
+  border: 1px solid var(--bord); padding: .05rem .3rem; border-radius: var(--r-s);
+}
+
+/* Dessin des graphes et des matrices (assets/js/graphes.js) */
+.g .g-arete { stroke: var(--texte-doux); stroke-width: 1.7; fill: none; }
+.g .g-pointe { fill: var(--texte-doux); }
+.g .g-zone { stroke: transparent; stroke-width: 16; fill: none; cursor: pointer; pointer-events: stroke; }
+.g .g-sommet circle, .g .g-sommet rect { fill: var(--surface); stroke: var(--texte); stroke-width: 1.6; }
+.g .g-sommet text { fill: var(--texte); font-family: var(--police); font-size: 13px; font-weight: 750; pointer-events: none; }
+.g .g-clic { cursor: pointer; }
+.g .g-cible { fill: transparent; stroke: none; pointer-events: all; }
+.g .g-clic:hover circle, .g .g-clic:hover rect { stroke: var(--c); stroke-width: 2.4; }
+.g .g-choisi circle, .g .g-choisi rect { stroke: var(--c); stroke-width: 3.2; fill: color-mix(in srgb, var(--c) 28%, var(--teinte)); }
+.g .g-etiquette, .g .g-poids {
+  fill: var(--texte-doux); font-family: var(--mono); font-size: 11px; font-weight: 700;
+  paint-order: stroke; stroke: var(--surface-2); stroke-width: 4px; stroke-linejoin: round;
+}
+.g .g-poids { fill: var(--texte); font-size: 12px; }
+.g .g-poids-fort { fill: color-mix(in srgb, var(--c) 80%, var(--ombrage)); }
+
+.g .g-arete.m-a { stroke: color-mix(in srgb, #3D6DF2 88%, var(--ombrage)); stroke-width: 3.2; }
+.g .g-arete.m-b { stroke: var(--or); stroke-width: 3.2; }
+.g .g-arete.m-c { stroke: var(--vert); stroke-width: 3.2; }
+.g .g-arete.m-d { stroke: var(--rouge); stroke-width: 3.2; stroke-dasharray: 7 4; }
+.g .g-arete.m-e, .g .g-sommet.m-e { opacity: .28; }
+.g .g-pointe.m-a { fill: color-mix(in srgb, #3D6DF2 88%, var(--ombrage)); }
+.g .g-pointe.m-b { fill: var(--or); }
+.g .g-pointe.m-c { fill: var(--vert); }
+.g .g-pointe.m-d { fill: var(--rouge); }
+.g .g-sommet.m-a circle, .g .g-sommet.m-a rect { fill: color-mix(in srgb, #3D6DF2 20%, var(--teinte)); stroke: color-mix(in srgb, #3D6DF2 88%, var(--ombrage)); stroke-width: 2.4; }
+.g .g-sommet.m-b circle, .g .g-sommet.m-b rect { fill: color-mix(in srgb, var(--or) 24%, var(--teinte)); stroke: var(--or); stroke-width: 2.4; }
+.g .g-sommet.m-c circle, .g .g-sommet.m-c rect { fill: color-mix(in srgb, var(--vert) 22%, var(--teinte)); stroke: var(--vert); stroke-width: 2.4; }
+.g .g-sommet.m-d circle, .g .g-sommet.m-d rect { fill: color-mix(in srgb, var(--rouge) 18%, var(--teinte)); stroke: var(--rouge); stroke-width: 2.4; }
+
+/* Groupes de sommets (composantes, parties d'une partition…) */
+.g .g-groupe-0 circle, .g .g-groupe-0 rect { fill: color-mix(in srgb, #3D6DF2 20%, var(--teinte)); stroke: color-mix(in srgb, #3D6DF2 80%, var(--ombrage)); stroke-width: 2.2; }
+.g .g-groupe-1 circle, .g .g-groupe-1 rect { fill: color-mix(in srgb, #E9A400 24%, var(--teinte)); stroke: color-mix(in srgb, #E9A400 85%, var(--ombrage)); stroke-width: 2.2; }
+.g .g-groupe-2 circle, .g .g-groupe-2 rect { fill: color-mix(in srgb, #15A46A 22%, var(--teinte)); stroke: color-mix(in srgb, #15A46A 85%, var(--ombrage)); stroke-width: 2.2; }
+.g .g-groupe-3 circle, .g .g-groupe-3 rect { fill: color-mix(in srgb, #DC4438 18%, var(--teinte)); stroke: color-mix(in srgb, #DC4438 85%, var(--ombrage)); stroke-width: 2.2; }
+.g .g-groupe-4 circle, .g .g-groupe-4 rect { fill: color-mix(in srgb, #A855C7 20%, var(--teinte)); stroke: color-mix(in srgb, #A855C7 85%, var(--ombrage)); stroke-width: 2.2; }
+.g .g-groupe-5 circle, .g .g-groupe-5 rect { fill: color-mix(in srgb, #12A594 20%, var(--teinte)); stroke: color-mix(in srgb, #12A594 85%, var(--ombrage)); stroke-width: 2.2; }
+
+.g .g-m-case { fill: var(--surface); stroke: var(--bord-fort); stroke-width: 1; }
+.g .g-m-case.m-a { fill: color-mix(in srgb, #3D6DF2 18%, var(--teinte)); }
+.g .g-m-case.m-b { fill: color-mix(in srgb, var(--or) 22%, var(--teinte)); }
+.g .g-m-case.m-c { fill: color-mix(in srgb, var(--vert) 20%, var(--teinte)); }
+.g .g-m-case.m-d { fill: color-mix(in srgb, var(--rouge) 16%, var(--teinte)); }
+.g .g-m-val { fill: var(--texte); font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.g .g-m-val.g-m-zero { fill: var(--texte-pale); font-weight: 500; }
+.g .g-m-entete { fill: var(--texte-doux); font-family: var(--mono); font-size: 12.5px; font-weight: 800; }
+.g .g-m-entete.m-a { fill: color-mix(in srgb, #3D6DF2 80%, var(--ombrage)); }
+.g .g-m-titre { fill: var(--texte); font-family: var(--police); font-size: 13px; font-weight: 800; }
+.g .g-m-crochet { stroke: var(--texte); stroke-width: 1.6; fill: none; }
+
+@media (max-width: 860px) {
+  .lc-etape-corps { grid-template-columns: 1fr; }
+  .lc-onglet { padding-right: .7rem; font-size: .84rem; }
+}
