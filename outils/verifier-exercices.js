@@ -6,10 +6,13 @@
    Pour chaque QCM ou jeu : le « tirage » tient dans la banque.
    Pour chaque « probleme » : chaque problème (ou chaque case de
    « champs ») a une réponse cohérente, et chaque schéma se dessine.
-   Pour chaque « lecon » : chaque étape du cours a un schéma, tous les
-   schémas se dessinent, les niveaux des exercices ne décroissent pas,
-   chaque exercice sur graphe est validé par sa solution et refusé
-   au départ, chaque case accepte sa propre réponse.
+   Pour chaque « lecon » : chaque étape du cours a un schéma ou une
+   animation, tous les schémas se dessinent, chaque animation s'exécute
+   pour chaque scénario et chaque n (et donne les comptes « attendu »),
+   les niveaux des exercices ne décroissent pas, chaque exercice sur
+   graphe est validé par sa solution et refusé au départ, chaque case
+   accepte sa propre réponse, les lignes des exercices « lignes » et
+   « cout » existent et les classes proposées contiennent la réponse.
    Pour chaque « enquete » : méthodes et challenges présents, niveaux
    croissants, chaque case accepte sa propre réponse (coordonnées
    comprises), chaque pièce (image, fichier) existe dans le dossier.
@@ -31,6 +34,7 @@ const { looseReponse, champCorrect, formaterReponse } = require(path.join(racine
 const Schemas = require(path.join(racine, "assets/js/schemas.js"));
 const Graphes = require(path.join(racine, "assets/js/graphes.js"));
 const Enquete = require(path.join(racine, "assets/js/enquete.js"));
+const Trace = require(path.join(racine, "assets/js/trace.js"));
 
 const bac = {};
 vm.createContext(bac);
@@ -212,10 +216,31 @@ function schemasDe(donnee, liste = []) {
   return liste;
 }
 
+/* Toutes les valeurs d'une clé donnée, à toute profondeur. */
+function valeursDe(donnee, cle, liste = []) {
+  if (Array.isArray(donnee)) donnee.forEach((d) => valeursDe(d, cle, liste));
+  else if (donnee && typeof donnee === "object") {
+    for (const [k, val] of Object.entries(donnee)) {
+      if (k === cle) liste.push(val);
+      else if (k !== "graphe") valeursDe(val, cle, liste);
+    }
+  }
+  return liste;
+}
+
 function verifierLecon(ou, lecon) {
   const etapes = lecon.cours || [];
   if (!etapes.length) signaler(ou + " : leçon sans étape de cours");
-  etapes.forEach((e, k) => { if (!e.schema) signaler(ou + " : l'étape " + (k + 1) + " du cours n'a pas de schéma"); });
+  etapes.forEach((e, k) => { if (!e.schema && !e.animation) signaler(ou + " : l'étape " + (k + 1) + " du cours n'a ni schéma ni animation"); });
+  const parties = [lecon.cours, lecon.problematique, lecon.exemple, lecon.correction, lecon.exercices];
+  for (const anim of valeursDe(parties, "animation")) {
+    verifies++;
+    for (const p of Trace.verifier(anim)) signaler(ou + " : animation — " + p);
+  }
+  for (const demo of valeursDe(parties, "demo")) {
+    const lignes = Array.isArray(demo) ? demo : demo.lignes;
+    if (!Array.isArray(lignes) || lignes.length < 2) signaler(ou + " : démonstration de moins de deux lignes");
+  }
   for (const partie of ["problematique", "exemple", "correction"]) if (!lecon[partie]) signaler(ou + " : partie « " + partie + " » absente");
   for (const spec of schemasDe([lecon.cours, lecon.problematique, lecon.exemple, lecon.correction, lecon.exercices])) {
     try {
@@ -262,6 +287,20 @@ function verifierLecon(ou, lecon) {
         if (!Graphes.evaluer(exo, voulu).ok) signaler(ici + " : la matrice attendue est refusée");
       } else if (exo.type === "remettre") {
         if ((exo.etapes || []).length < 3) signaler(ici + " : au moins trois étapes à remettre dans l'ordre");
+      } else if (exo.type === "lignes" || exo.type === "cout") {
+        const sources = String(exo.code || "").split("\n");
+        const valide = (n) => Number.isInteger(Number(n)) && n >= 1 && n <= sources.length && /[^\s{}]/.test(sources[n - 1]);
+        if (exo.type === "lignes") {
+          if (!(exo.reponse || []).length) signaler(ici + " : aucune ligne attendue");
+          for (const n of exo.reponse || []) if (!valide(n)) signaler(ici + " : la ligne " + n + " n'existe pas ou est vide");
+        } else {
+          const lignes = Object.entries(exo.lignes || {});
+          if (!lignes.length) signaler(ici + " : aucune ligne à classer");
+          for (const [n, classe] of lignes) {
+            if (!valide(Number(n))) signaler(ici + " : la ligne " + n + " n'existe pas ou est vide");
+            if (!(exo.choix || []).includes(classe)) signaler(ici + " : « " + classe + " » (ligne " + n + ") absent des choix");
+          }
+        }
       } else signaler(ici + " : type inconnu « " + exo.type + " »");
     } catch (e) {
       signaler(ici + " : " + e.message);

@@ -17,9 +17,23 @@
      selection  : choisir des sommets (ou des arêtes) d'un graphe ;
      ordre      : cliquer des sommets dans l'ordre (parcours, chaîne) ;
      matrice    : remplir une matrice case par case ;
-     remettre   : remettre les étapes d'une rédaction dans l'ordre.
+     remettre   : remettre les étapes d'une rédaction dans l'ordre ;
+     lignes     : cliquer les lignes d'un code (champ « code ») ;
+     cout       : donner la classe (Θ(1), O(n)…) de lignes d'un code.
    La correction des exercices sur graphe est faite par Graphes.evaluer
    (assets/js/graphes.js), partagée avec le vérificateur Node.
+   Un exercice qcm, champs ou remettre peut afficher un code C numéroté
+   (champ « code »).
+
+   Blocs de contenu propres aux leçons (en plus de ceux de blocsTexte) :
+     { schema }     un ou plusieurs schémas ;
+     { animation }  exécution animée d'un code C (assets/js/trace.js) ;
+     { demo }       démonstration révélée ligne par ligne :
+                    { enonce, lignes: [["Soit n ≥ 1.", "on fixe n"], …] } ;
+     { codeC, legende } code C coloré et numéroté ;
+     { redaction }, { code, legende }, { remarque }, { attention }.
+   Une étape du cours a un « schema » ou une « animation », et peut
+   avoir une « redaction » et une « demo ».
 
    Utilisation :
      MoteurLecon.lancer(conteneur, lecon, {
@@ -136,6 +150,9 @@ const MoteurLecon = {
     for (const bloc of [].concat(contenu ?? [])) {
       if (bloc && typeof bloc === "object" && !Array.isArray(bloc)) {
         if (bloc.schema) { blocs.push(this._figures(bloc.schema)); continue; }
+        if (bloc.animation) { blocs.push(this._animation(bloc.animation)); continue; }
+        if (bloc.demo) { blocs.push(this._demo(bloc.demo)); continue; }
+        if (bloc.codeC !== undefined) { blocs.push(this._vueCode(bloc.codeC, { legende: bloc.legende }).racine); continue; }
         if (bloc.redaction) { blocs.push(this._redaction(bloc.redaction, bloc.titreRedaction)); continue; }
         if (bloc.code !== undefined) { blocs.push(this._code(bloc.code, bloc.legende)); continue; }
         if (bloc.remarque) { blocs.push(el("div", { class: "lc-encadre" }, ...blocsTexte(bloc.remarque))); continue; }
@@ -157,6 +174,70 @@ const MoteurLecon = {
     const bloc = el("pre", { class: "bloc-code lc-pseudo", texte: code });
     if (!legende) return bloc;
     return el("div", { class: "pb-code" }, el("div", { class: "pb-code-legende", texte: legende }), bloc);
+  },
+
+  /* Code C coloré, une rangée par ligne avec son numéro. Renvoie la
+     racine et les rangées (pour les exercices qui y ajoutent un choix). */
+  _vueCode(code, options = {}) {
+    const boite = el("div", { class: "lc-code" + (options.cliquable ? " cliquable" : "") });
+    const lignes = String(code).replace(/\r\n?/g, "\n").split("\n").map((src, k) => {
+      const fin = el("span", { class: "lc-code-fin" });
+      const rangee = el(options.cliquable ? "button" : "div", Object.assign({ class: "lc-code-ligne" }, options.cliquable ? { type: "button" } : {}),
+        el("span", { class: "lc-code-num", texte: String(k + 1) }),
+        el("code", { class: "lc-code-src", html: colorerC(src) || " " }),
+        fin);
+      boite.append(rangee);
+      return { n: k + 1, rangee, fin, vide: !src.trim() || /^[\s{}]*$/.test(src) };
+    });
+    const racine = options.legende
+      ? el("div", { class: "pb-code" }, el("div", { class: "pb-code-legende", texte: options.legende }), boite)
+      : boite;
+    return { racine, lignes };
+  },
+
+  _animation(spec) {
+    try {
+      return el("div", { class: "lc-animation" }, Trace.monter(spec));
+    } catch (e) {
+      return el("div", { class: "lc-encadre lc-attention" }, el("p", { texte: "Animation indisponible : " + e.message }));
+    }
+  },
+
+  /* Démonstration rédigée ligne par ligne : chaque ligne apparaît à la
+     demande, avec sa justification dans la marge. */
+  _demo(demo) {
+    const d = Array.isArray(demo) ? { lignes: demo } : demo;
+    const items = d.lignes.map((l, k) => {
+      const [texte, pourquoi] = [].concat(l);
+      return el("li", { class: "lc-demo-ligne" },
+        el("span", { class: "lc-demo-num", texte: String(k + 1) }),
+        el("span", { class: "lc-demo-texte", html: texteRiche(texte) }),
+        pourquoi ? el("span", { class: "lc-demo-pourquoi", html: texteRiche(pourquoi) }) : el("span"));
+    });
+    let vues = 1;
+    const compte = el("span", { class: "lc-demo-compte" });
+    const suivant = el("button", { class: "btn btn-principal btn-petit", type: "button" }, "Ligne suivante ↓");
+    const tout = el("button", { class: "btn btn-fantome btn-petit", type: "button" }, "Tout afficher");
+    const reprendre = el("button", { class: "btn btn-fantome btn-petit", type: "button" }, "↺ Reprendre");
+    const maj = (nouvelle) => {
+      items.forEach((it, k) => {
+        it.style.display = k < vues ? "" : "none";
+        it.classList.toggle("nouvelle", k === vues - 1 && nouvelle);
+      });
+      const fini = vues >= items.length;
+      suivant.disabled = fini; tout.disabled = fini;
+      reprendre.style.display = vues > 1 ? "" : "none";
+      compte.textContent = "ligne " + Math.min(vues, items.length) + " / " + items.length;
+    };
+    suivant.addEventListener("click", () => { vues++; maj(true); });
+    tout.addEventListener("click", () => { vues = items.length; maj(false); });
+    reprendre.addEventListener("click", () => { vues = 1; maj(false); });
+    maj(false);
+    return el("aside", { class: "lc-redaction lc-demo" },
+      el("h4", { texte: d.titre || "Démonstration ligne par ligne" }),
+      d.enonce ? el("p", { class: "lc-demo-enonce", html: texteRiche(d.enonce) }) : null,
+      el("ol", { class: "lc-demo-lignes" }, ...items),
+      el("div", { class: "lc-demo-nav" }, suivant, tout, reprendre, el("span", { class: "espace" }), compte));
   },
 
   /* Un ou plusieurs schémas côte à côte (graphes, matrices ou
@@ -202,7 +283,9 @@ const MoteurLecon = {
       if (e.schema) {
         carte.append(el("div", { class: "lc-etape-corps" }, texte, el("div", { class: "lc-etape-schema" }, this._figures(e.schema))));
       } else carte.append(texte);
+      if (e.animation) carte.append(this._animation(e.animation));
       if (e.redaction) carte.append(this._redaction(e.redaction, e.titreRedaction));
+      if (e.demo) carte.append(this._demo(e.demo));
       vider(scene).append(carte);
 
       vider(nav);
@@ -232,7 +315,9 @@ const MoteurLecon = {
     const corps = Array.isArray(donnees) || typeof donnees === "string" ? { texte: donnees } : donnees;
     const carte = el("section", { class: "code-carte lc-carte lc-" + cle }, el("h3", { texte: corps.titre || titre }));
     carte.append(...this._contenu(corps.texte));
+    if (corps.codeC) carte.append(this._vueCode(corps.codeC, { legende: corps.legende }).racine);
     if (corps.schema) carte.append(this._figures(corps.schema));
+    if (corps.animation) carte.append(this._animation(corps.animation));
     if (corps.questions) {
       const liste = el("ol", { class: "lc-questions" });
       for (const q of corps.questions) liste.append(el("li", {}, ...this._contenu(q)));
@@ -286,6 +371,7 @@ const MoteurLecon = {
       exo.titre ? el("h2", { class: "lc-exo-titre", texte: exo.titre }) : null
     );
     carte.append(...this._contenu(exo.enonce));
+    if (exo.code && exo.type !== "lignes" && exo.type !== "cout") carte.append(this._vueCode(exo.code).racine);
     if (exo.schema) carte.append(this._figures(exo.schema));
 
     const zone = el("div", { class: "pb-reaction" });
@@ -297,7 +383,9 @@ const MoteurLecon = {
       selection: () => this._graphe(exo, zone, fin),
       ordre: () => this._graphe(exo, zone, fin),
       matrice: () => this._matrice(exo, zone, fin),
-      remettre: () => this._remettre(exo, zone, fin)
+      remettre: () => this._remettre(exo, zone, fin),
+      lignes: () => this._lignes(exo, zone, fin),
+      cout: () => this._cout(exo, zone, fin)
     }[exo.type];
     carte.append(fabrique ? fabrique() : el("p", { texte: "Type d'exercice inconnu : " + exo.type }), zone);
 
@@ -746,5 +834,101 @@ const MoteurLecon = {
     });
     rendre();
     return el("div", { class: "lc-widget lc-remettre" }, zoneChoisies, zoneReserve, el("div", { class: "pb-valider" }, bouton));
+  },
+
+  /* ---------------- Exercice : cliquer des lignes d'un code ---------------- */
+
+  _lignes(exo, zone, fin) {
+    const attendues = new Set(exo.reponse);
+    const choisies = new Set();
+    let fini = false, essais = 0;
+    const vue = this._vueCode(exo.code, { cliquable: true });
+    const etatTexte = el("span", { class: "lc-graphe-etat" });
+    const bouton = el("button", { class: "btn btn-principal", type: "button" }, "Vérifier");
+    const rendre = (revelation) => {
+      for (const l of vue.lignes) {
+        l.rangee.classList.toggle("choisie", choisies.has(l.n));
+        l.rangee.classList.toggle("attendue", !!revelation && attendues.has(l.n));
+        l.rangee.disabled = fini || l.vide;
+      }
+      etatTexte.textContent = choisies.size ? "Lignes " + [...choisies].sort((a, b) => a - b).join(", ") : "Aucune ligne choisie";
+      bouton.disabled = fini || !choisies.size;
+    };
+    for (const l of vue.lignes) l.rangee.addEventListener("click", () => {
+      if (fini || l.vide) return;
+      if (choisies.has(l.n)) choisies.delete(l.n); else choisies.add(l.n);
+      rendre();
+    });
+    bouton.addEventListener("click", () => {
+      if (fini) return;
+      essais++;
+      const manquantes = [...attendues].filter((n) => !choisies.has(n)).length;
+      const enTrop = [...choisies].filter((n) => !attendues.has(n)).length;
+      if (!manquantes && !enTrop) {
+        fini = true; rendre();
+        this._message(zone, { bon: true, solution: exo.explication });
+        fin(true);
+        return;
+      }
+      const morceaux = [];
+      if (enTrop) morceaux.push(enTrop + (enTrop > 1 ? " lignes en trop" : " ligne en trop"));
+      if (manquantes) morceaux.push(manquantes + (manquantes > 1 ? " lignes manquantes" : " ligne manquante"));
+      this._message(zone, {
+        message: morceaux.join(", ") + ".", indice: exo.indice, essais,
+        surRevele: () => {
+          fini = true; choisies.clear();
+          rendre(true);
+          this._message(zone, { revele: true, detail: el("code", { texte: "Lignes " + [...attendues].sort((a, b) => a - b).join(", ") }), solution: exo.explication });
+          fin(false);
+        }
+      });
+    });
+    rendre();
+    return el("div", { class: "lc-widget" }, vue.racine,
+      el("div", { class: "lc-graphe-outils" }, etatTexte, el("span", { class: "espace" }), bouton));
+  },
+
+  /* ---------------- Exercice : la classe de chaque ligne ---------------- */
+
+  _cout(exo, zone, fin) {
+    const vue = this._vueCode(exo.code);
+    const choix = exo.choix;
+    let fini = false, essais = 0;
+    const listes = [];
+    for (const [n, attendu] of Object.entries(exo.lignes)) {
+      const l = vue.lignes[Number(n) - 1];
+      const liste = el("select", { class: "lc-cout-choix", "aria-label": "Classe de la ligne " + n },
+        el("option", { value: "", texte: "…" }), ...choix.map((c) => el("option", { value: c, texte: c })));
+      liste.addEventListener("change", () => liste.classList.remove("faux"));
+      l.fin.append(liste);
+      l.rangee.classList.add("a-classer");
+      listes.push({ n, liste, attendu });
+    }
+    const bouton = el("button", { class: "btn btn-principal", type: "button" }, "Vérifier");
+    const verrouiller = () => { fini = true; bouton.disabled = true; listes.forEach((x) => { x.liste.disabled = true; }); };
+    bouton.addEventListener("click", () => {
+      if (fini) return;
+      const vide = listes.find((x) => !x.liste.value);
+      if (vide) { vide.liste.focus(); return; }
+      essais++;
+      const faux = listes.filter((x) => x.liste.value !== x.attendu);
+      listes.forEach((x) => { x.liste.classList.toggle("faux", faux.includes(x)); x.liste.classList.toggle("juste", !faux.includes(x)); });
+      if (!faux.length) {
+        verrouiller();
+        this._message(zone, { bon: true, solution: exo.explication });
+        fin(true);
+        return;
+      }
+      this._message(zone, {
+        message: faux.length + (faux.length > 1 ? " lignes mal classées." : " ligne mal classée."), indice: exo.indice, essais,
+        surRevele: () => {
+          verrouiller();
+          listes.forEach((x) => { x.liste.value = x.attendu; x.liste.classList.remove("faux"); x.liste.classList.add("juste"); });
+          this._message(zone, { revele: true, solution: exo.explication });
+          fin(false);
+        }
+      });
+    });
+    return el("div", { class: "lc-widget" }, vue.racine, el("div", { class: "pb-valider" }, bouton));
   }
 };

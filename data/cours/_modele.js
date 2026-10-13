@@ -256,7 +256,8 @@
 
    Schémas SVG (assets/js/schemas.js) : "schema" (objet ou tableau)
    dans exemple ou exercice, "legende" facultative. Types : spectre,
-   am, fm, numerique, constellation, trame, bus, chaine. Paramètres
+   am, fm, numerique, constellation, trame, bus, chaine, courbes,
+   grille, arbre, sauts, barres. Paramètres
    de chaque type : voir LISEZMOI.md et data/cours/electronique-3.js.
 
 
@@ -334,12 +335,33 @@
    -------------------------------------------------------------
    Une leçon complète en cinq onglets : Cours (étapes avec Précédent /
    Suivant), Problématique, Exemple, Correction, Exercices. Chaque étape
-   du cours DOIT avoir un schéma (contrôlé par le vérificateur).
+   du cours DOIT avoir un schéma ou une animation (contrôlé par le
+   vérificateur), et peut avoir une redaction et une demo.
 
    Contenu riche (texte, questions, correction, explication…) :
    chaîne = paragraphe ; tableau = liste à pastilles ; { titre } ;
    { entetes, lignes } ; { schema } ; { redaction: [...] } (encadré
-   « Rédaction ») ; { code, legende } ; { remarque } ; { attention }.
+   « Rédaction ») ; { code, legende } ; { codeC, legende } (code C
+   coloré et numéroté) ; { remarque } ; { attention } ;
+   { demo: { enonce, lignes: [["Soit n ≥ 1.", "on fixe n"], …] } }
+   (démonstration révélée ligne par ligne, justification en marge) ;
+   { animation: {…} } (exécution animée, assets/js/trace.js) :
+     animation: {
+       code: `int f(int t[], int n) { … }`,   // C : fonctions, int, tableaux,
+                                              // if, for, while, return, printf
+       appel: "f",                            // défaut : la première fonction
+       n: { min: 1, max: 8, depart: 5 },      // réglage de n (facultatif)
+       scenarios: [{ nom: "Pire cas", texte: "…",
+         entree: (n) => ({ t: [...], n }),    // ou un objet fixe
+         attendu: (n) => ({ 3: n, ops: 5 * n + 3, renvoie: -1, appels: 1 }) }],
+       mesure: { ligne: 3, nom: "comparaisons" },  // ou un tableau
+       boucles: { 2: "boucle sur i" },        // libellés (ligne d'en-tête)
+       tableau: "t", pointeurs: ["i", "j"],   // tableau dessiné, indices
+       operations: true }                     // compteur d'opérations (CM1)
+   attendu (ligne → exécutions, ops, renvoie, appels) est vérifié par
+   l'outil pour chaque n de la plage.
+   problematique, exemple et correction acceptent aussi codeC et
+   animation comme clés directes.
 
    Schémas : un objet ou un tableau (affichés côte à côte), de type
    "graphe" ou "matrice" (assets/js/graphes.js), ou un type de
@@ -406,10 +428,16 @@
        //   topologique, augmentant (couplage).
        { type: "matrice", graphe, puissance: 2, max: 3 },  // ou lignes,
        //   colonnes et attendu: [[…]] ; un clic fait tourner la case 0 → max.
-       { type: "remettre", etapes: ["1re étape", "2e", "…"] }  // dans l'ordre
+       { type: "remettre", etapes: ["1re étape", "2e", "…"] },  // dans l'ordre
+       // qcm, champs et remettre acceptent un champ code (C numéroté).
+       { type: "lignes", code: `…`, reponse: [4, 5] },    // lignes à cliquer
+       { type: "cout", code: `…`, choix: ["Θ(1)", "Θ(n)", "O(n)"],
+         lignes: { 2: "Θ(1)", 5: "O(n)" } }               // classe par ligne
      ]
    }
-   Contrôlé par node outils/verifier-exercices.js : schéma à chaque étape,
+   Contrôlé par node outils/verifier-exercices.js : schéma ou animation
+   à chaque étape, animations exécutées (comptes attendu), lignes des
+   exercices lignes / cout existantes,
    schémas dessinables, niveaux croissants, chaque solution acceptée et
    chaque départ refusé, chaque case de réponse acceptant sa réponse.
 

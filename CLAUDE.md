@@ -22,9 +22,10 @@ Seule vérification automatisée. Elle charge les fichiers `data/` dans l'ordre 
 `solution` et échoue avec son code de `depart`, que les réponses des QCM désignent des
 choix existants, que chaque `tirage` tient dans sa banque, que chaque case `champs`
 d'un `probleme` accepte sa propre réponse, que chaque `schema` se dessine, que les
-`id` sont uniques par matière, et pour chaque `lecon` qu'un schéma illustre chaque
-étape du cours et que chaque exercice sur graphe accepte sa `solution` et refuse son
-état de départ, et pour chaque `enquete` que les niveaux croissent, que les
+`id` sont uniques par matière, et pour chaque `lecon` qu'un schéma ou une animation
+illustre chaque étape du cours, que chaque `animation` s'exécute pour chaque scénario
+et chaque `n` en donnant ses comptes `attendu`, que chaque exercice sur graphe accepte
+sa `solution` et refuse son état de départ, et pour chaque `enquete` que les niveaux croissent, que les
 pièces existent et que chaque case accepte sa réponse. À lancer après toute
 modification d'exercice ou des moteurs d'exécution.
 
@@ -68,11 +69,18 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
   (une case par réponse, nombres comparés avec `tolerance` relative via `lireNombre` /
   `champCorrect`, exportés pour le vérificateur).
 - `schemas.js` — `Schemas.svg(spec)` : schémas SVG du champ `schema` des problèmes
-  (spectre, am, fm, numerique, constellation, trame, bus, chaine). Chaîne SVG pure,
+  (spectre, am, fm, numerique, constellation, trame, bus, chaine, courbes, grille,
+  arbre, sauts, barres). Chaîne SVG pure,
   sans DOM ; couleurs via les classes `sch-*` de `style.css`.
 - `lecon.js` — `MoteurLecon` : leçons en cinq onglets (cours pas à pas avec
   schéma et rédaction, problématique, exemple, correction, exercices `qcm`,
-  `champs`, `construire`, `selection`, `ordre`, `matrice`, `remettre`).
+  `champs`, `construire`, `selection`, `ordre`, `matrice`, `remettre`, `lignes`,
+  `cout`). Blocs `demo` (démonstration révélée ligne par ligne) et `animation`.
+- `trace.js` — `Trace` : interpréteur pas à pas d'un sous-ensemble de C (fonctions
+  récursives, tableaux, boucles) qui enregistre chaque étape (ligne, boucle et tour,
+  variables, exécutions par ligne, opérations élémentaires au sens du CM1) ;
+  `Trace.monter(spec)` construit le lecteur (scénarios meilleur / pire cas, réglage
+  de `n`, bilan), `Trace.verifier(spec)` sert à l'outil de vérification.
 - `graphes.js` — `Graphes` (sans DOM, exporté pour Node) : lecture de l'écriture
   compacte des graphes, algorithmes (parcours en profondeur au format du CM3,
   Kosaraju, biparti, cliques, couplages…), dessin SVG des types `graphe` et

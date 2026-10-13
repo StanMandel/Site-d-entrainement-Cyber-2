@@ -10,7 +10,12 @@
      - "constellation" : points d'une constellation dans le plan IQ ;
      - "trame"         : niveaux d'une ligne série (UART, RS-232) ;
      - "bus"           : câblage d'un bus I2C ou SPI (champ protocole) ;
-     - "chaine"        : blocs reliés par des flèches.
+     - "chaine"        : blocs reliés par des flèches ;
+     - "courbes"       : courbes de croissance f(n), c·g(n), rang n₀, zone ;
+     - "grille"        : cases (i, j) parcourues par deux boucles imbriquées ;
+     - "arbre"         : arbre des appels d'une fonction récursive ;
+     - "sauts"         : valeurs successives d'un compteur sur une droite ;
+     - "barres"        : barres horizontales comparées (échelle log possible).
    Aucune couleur en dur : les classes sch-* de style.css lisent les
    jetons du thème courant. Pas de DOM : utilisable sous Node.
    ============================================================= */
@@ -362,7 +367,214 @@ const Schemas = (() => {
     return cadre(L, H, c, "Schéma de principe");
   }
 
-  const types = { spectre, am, fm, numerique, constellation, trame, bus, chaine };
+  /* Étiquettes empilées sans chevauchement (positions y triées). */
+  function ecarter(etiquettes, ecart, yMin, yMax) {
+    const tri = etiquettes.slice().sort((a, b) => a.y - b.y);
+    for (let k = 1; k < tri.length; k++) if (tri[k].y - tri[k - 1].y < ecart) tri[k].y = tri[k - 1].y + ecart;
+    const debord = tri.length ? tri[tri.length - 1].y - yMax : 0;
+    if (debord > 0) tri.forEach((e) => { e.y = Math.max(yMin, e.y - debord); });
+    return tri;
+  }
+
+  /* ---------------- Courbes de croissance ----------------
+     fonctions : [{ f: (n) => …, nom, style: 1-4, pointille }]
+     xMin, xMax, yMax : fenêtre ; n0 : rang marqué en pointillé ;
+     zone : { entre: [a, b] } | { dessous: a } | { dessus: a } (indices
+     dans fonctions), à partir de zone.depuis (n0 par défaut). */
+  function courbes(s) {
+    const L = 560, H = 290, g = 46, d = 104, h = 16, b = 34;
+    const x0 = s.xMin ?? 0, x1 = s.xMax ?? 10, N = 180;
+    const fonctions = s.fonctions || [];
+    const echant = fonctions.map((fn) => {
+      const pts = [];
+      for (let k = 0; k <= N; k++) {
+        const x = x0 + (x1 - x0) * k / N;
+        const y = fn.f(x);
+        if (Number.isFinite(y)) pts.push([x, y]);
+      }
+      return pts;
+    });
+    const yMin = s.yMin ?? 0;
+    const yMax = s.yMax ?? Math.max(1, ...echant.flat().map((p) => p[1])) * 1.05;
+    const X = (x) => g + (x - x0) / (x1 - x0) * (L - g - d);
+    const Y = (y) => H - b - (y - yMin) / (yMax - yMin) * (H - b - h);
+    /* Coupe la courbe là où elle sort par le haut. */
+    const visibles = echant.map((pts) => {
+      const out = [];
+      for (let k = 0; k < pts.length; k++) {
+        const [x, y] = pts[k];
+        if (y > yMax) {
+          if (k > 0 && pts[k - 1][1] <= yMax) {
+            const [xp, yp] = pts[k - 1];
+            out.push([xp + (x - xp) * (yMax - yp) / (y - yp), yMax]);
+          }
+          break;
+        }
+        out.push([x, Math.max(yMin, y)]);
+      }
+      return out;
+    });
+    let c = "";
+    const z = s.zone;
+    if (z) {
+      const depuis = z.depuis ?? s.n0 ?? x0;
+      const garder = (pts) => pts.filter((p) => p[0] >= depuis);
+      const plafond = (pts) => echant[pts].filter((p) => p[0] >= depuis).map(([x, y]) => [x, Math.min(yMax, Math.max(yMin, y))]);
+      let poly = null;
+      if (z.entre) {
+        const a = plafond(z.entre[0]), bb = plafond(z.entre[1]);
+        poly = a.concat(bb.reverse());
+      } else if (z.dessous !== undefined) {
+        const a = plafond(z.dessous);
+        if (a.length) poly = a.concat([[a[a.length - 1][0], yMin], [a[0][0], yMin]]);
+      } else if (z.dessus !== undefined) {
+        const a = plafond(z.dessus);
+        if (a.length) poly = a.concat([[a[a.length - 1][0], yMax], [a[0][0], yMax]]);
+      }
+      if (poly && garder(poly).length) c += `<path d="M${poly.map(([x, y]) => r1(X(x)) + " " + r1(Y(y))).join(" L")} Z" class="sch-zone"/>`;
+    }
+    c += trait(g, H - b, L - d + 30, H - b, "sch-axe", true);
+    c += trait(g, H - b, g, h - 6, "sch-axe", true);
+    c += texte(L - d + 30, H - b + 26, s.nomX || "n", "sch-txt sch-txt-doux", "end");
+    if (s.nomY) c += texte(g + 8, h + 4, s.nomY, "sch-txt sch-txt-doux", "start");
+    const pasX = s.pasX || (x1 - x0 <= 12 ? 1 : x1 - x0 <= 30 ? 5 : x1 - x0 <= 120 ? 20 : Math.pow(10, Math.floor(Math.log10(x1 - x0))));
+    for (let x = Math.ceil(x0 / pasX) * pasX; x <= x1 + 1e-9; x += pasX) {
+      c += trait(X(x), H - b, X(x), H - b + 4, "sch-axe");
+      c += texte(X(x), H - b + 16, fr(Math.round(x * 100) / 100), "sch-txt sch-txt-doux");
+    }
+    if (s.n0 !== undefined) {
+      c += trait(X(s.n0), H - b, X(s.n0), h, "sch-cote");
+      c += texte(X(s.n0), H - b + 29, s.n0Texte || "n₀", "sch-txt sch-txt-fort");
+    }
+    const etiquettes = [];
+    fonctions.forEach((fn, k) => {
+      const pts = visibles[k];
+      if (pts.length < 2) return;
+      const style = fn.style || k + 1;
+      c += chemin(pts.map(([x, y]) => [X(x), Y(y)]), "sch-courbe sch-c" + style + (fn.pointille ? " sch-pointille" : ""));
+      const [xe, ye] = pts[pts.length - 1];
+      if (fn.nom) etiquettes.push({ x: X(xe) + 6, y: Y(ye) + 4, nom: fn.nom, style });
+    });
+    for (const e of ecarter(etiquettes, 15, h + 4, H - b - 4)) c += texte(e.x, e.y, e.nom, "sch-txt sch-txt-fort sch-halo sch-t" + e.style, "start");
+    return cadre(L, H, c, "Courbes");
+  }
+
+  /* ---------------- Grille des tours de deux boucles ----------------
+     lignes × colonnes cases ; cases(i, j) → 0 (vide), 1 ou 2 (couleurs) ;
+     nomI, nomJ : noms des compteurs ; debutI, debutJ : premières valeurs. */
+  function grille(s) {
+    const nl = s.lignes ?? s.n, nc = s.colonnes ?? s.n;
+    const di = s.debutI ?? 0, dj = s.debutJ ?? 0;
+    const t = Math.max(14, Math.min(30, 300 / Math.max(nl, nc)));
+    const g = 58, haut = 40, droite = s.sommes === false ? 14 : 70;
+    const L = g + nc * t + droite, H = haut + nl * t + (s.sommes === false ? 12 : 34);
+    let c = texte(g + nc * t / 2, 14, (s.nomJ || "j") + " →", "sch-txt sch-txt-doux");
+    let total = 0;
+    for (let j = 0; j < nc; j++) c += texte(g + j * t + t / 2, haut - 8, String(dj + j), "sch-txt sch-txt-doux");
+    for (let i = 0; i < nl; i++) {
+      c += texte(g - 8, haut + i * t + t / 2 + 4, (s.nomI || "i") + " = " + (di + i), "sch-txt", "end");
+      let somme = 0;
+      for (let j = 0; j < nc; j++) {
+        const v = Number(s.cases(di + i, dj + j)) || 0;
+        if (v) somme++;
+        c += boite(g + j * t + 1, haut + i * t + 1, t - 2, t - 2, v === 2 ? "sch-on2" : v ? "sch-on" : "sch-off");
+      }
+      total += somme;
+      if (s.sommes !== false) c += texte(g + nc * t + 10, haut + i * t + t / 2 + 4, "→ " + somme, "sch-txt sch-txt-fort", "start");
+    }
+    if (s.sommes !== false) c += texte(g + nc * t + 10, haut + nl * t + 22, s.total || "total " + total, "sch-txt sch-txt-fort sch-t1", "start");
+    return cadre(L, H, c, "Tours de boucles");
+  }
+
+  /* ---------------- Arbre des appels récursifs ----------------
+     racine : valeur de départ ; enfants(v) → valeurs des appels lancés ;
+     etiquette(v) → texte du nœud ; niveaux : nombre d'appels par niveau. */
+  function arbre(s) {
+    const etiquette = s.etiquette || ((v) => String(v));
+    let compte = 0;
+    const construire = (v, prof) => {
+      if (++compte > 70) throw new Error("arbre trop grand pour être dessiné");
+      const enf = prof < 7 ? (s.enfants(v) || []) : [];
+      return { v, prof, enfants: enf.map((e) => construire(e, prof + 1)) };
+    };
+    const racine = construire(s.racine, 0);
+    const parNiveau = [];
+    let feuilles = 0;
+    const placer = (nd) => {
+      (parNiveau[nd.prof] = parNiveau[nd.prof] || []).push(nd);
+      if (!nd.enfants.length) { nd.x = feuilles++; return; }
+      nd.enfants.forEach(placer);
+      nd.x = (nd.enfants[0].x + nd.enfants[nd.enfants.length - 1].x) / 2;
+    };
+    placer(racine);
+    const largeurTexte = Math.max(...parNiveau.flat().map((nd) => etiquette(nd.v).length));
+    const lb = Math.max(30, largeurTexte * 7.2 + 12), ecart = lb + 10, dy = 54;
+    const droite = s.niveaux ? 96 : 12;
+    const L = Math.max(200, 16 + feuilles * ecart + droite), H = 18 + parNiveau.length * dy;
+    const X = (nd) => 12 + nd.x * ecart + lb / 2;
+    const Y = (nd) => 14 + nd.prof * dy;
+    let c = "";
+    const traits = (nd) => nd.enfants.forEach((e) => { c += trait(X(nd), Y(nd) + 24, X(e), Y(e), "sch-axe"); traits(e); });
+    traits(racine);
+    for (const nd of parNiveau.flat()) {
+      c += boite(X(nd) - lb / 2, Y(nd), lb, 24, nd.enfants.length ? "sch-boite" : "sch-boite sch-boite-forte");
+      c += texte(X(nd), Y(nd) + 16, etiquette(nd.v), "sch-txt");
+    }
+    if (s.niveaux) parNiveau.forEach((niv, p) => {
+      c += texte(L - 8, 14 + p * dy + 16, typeof s.niveaux === "function" ? s.niveaux(p, niv.length) : niv.length + (niv.length > 1 ? " appels" : " appel"), "sch-txt sch-txt-fort sch-t1", "end");
+    });
+    return cadre(L, H, c, "Arbre des appels");
+  }
+
+  /* ---------------- Sauts d'un compteur sur une droite ----------------
+     valeurs : valeurs successives du compteur ; max : fin de la droite ;
+     borne : { v, nom } la limite de la boucle ; pas : texte sur chaque saut. */
+  function sauts(s) {
+    const L = 560, H = 138, g = 24, d = 30, yA = 92;
+    const max = s.max ?? Math.max(...s.valeurs) * 1.1;
+    const X = (v) => g + v / max * (L - g - d);
+    let c = trait(g, yA, L - d + 14, yA, "sch-axe", true);
+    for (const v of s.graduations || []) {
+      c += trait(X(v), yA - 3, X(v), yA + 3, "sch-axe");
+      c += texte(X(v), yA + 30, fr(v), "sch-txt sch-txt-doux");
+    }
+    if (s.borne) {
+      c += trait(X(s.borne.v), yA + 14, X(s.borne.v), 12, "sch-cote-forte");
+      c += texte(X(s.borne.v), 10, s.borne.nom || "n", "sch-txt sch-txt-fort sch-halo");
+    }
+    s.valeurs.forEach((v, k) => {
+      if (k > 0) {
+        const a = X(s.valeurs[k - 1]), b2 = X(v), hArc = Math.min(48, 12 + (b2 - a) * 0.35);
+        c += `<path d="M${r1(a)} ${yA - 4} Q${r1((a + b2) / 2)} ${r1(yA - 4 - hArc * 1.6)} ${r1(b2)} ${yA - 4}" class="sch-arc" marker-end="POINTE"/>`;
+        if (s.pas && b2 - a > 22) c += texte((a + b2) / 2, yA - 8 - hArc * 0.8, s.pas, "sch-txt sch-txt-doux sch-halo");
+      }
+      c += `<circle cx="${r1(X(v))}" cy="${yA}" r="4" class="sch-point"/>`;
+      c += texte(X(v), yA + 17, fr(v), "sch-txt sch-txt-fort");
+    });
+    return cadre(L, H, c, "Valeurs du compteur");
+  }
+
+  /* ---------------- Barres horizontales ----------------
+     barres : [{ nom, v, texte, style }] ; log : échelle logarithmique. */
+  function barres(s) {
+    const items = s.barres || [];
+    const gN = Math.max(...items.map((it) => String(it.nom).length)) * 7.4 + 18;
+    const L = 560, dy = 30, H = 12 + items.length * dy;
+    const echelle = (v) => s.log ? Math.log10(1 + v) : v;
+    const max = Math.max(...items.map((it) => echelle(it.v)), 1e-9);
+    const plein = L - gN - 110;
+    let c = "";
+    items.forEach((it, k) => {
+      const y = 8 + k * dy;
+      c += texte(gN - 8, y + 15, it.nom, "sch-txt", "end");
+      const l = Math.max(2, echelle(it.v) / max * plein);
+      c += boite(gN, y + 2, l, dy - 10, "sch-barre sch-barre-" + (it.style || 1));
+      c += texte(gN + l + 8, y + 15, it.texte ?? fr(it.v), "sch-txt sch-txt-fort", "start");
+    });
+    return cadre(L, H, c, "Comparaison");
+  }
+
+  const types = { spectre, am, fm, numerique, constellation, trame, bus, chaine, courbes, grille, arbre, sauts, barres };
 
   return {
     types: Object.keys(types),

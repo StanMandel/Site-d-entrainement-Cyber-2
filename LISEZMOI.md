@@ -23,10 +23,11 @@ assets/js/verif-code.js     exécution des tests des exercices de programmation
 assets/js/code.js           page des exercices de programmation (éditeur, résultats)
 assets/js/terminal.js       moteur des exercices « terminal » (commandes à taper)
 assets/js/reseau-cisco.js   simulateur Cisco (topologie, IOS, ping) + moteur « reseau »
-assets/js/schemas.js        schémas SVG des problèmes (spectre, chronogrammes, constellation…)
+assets/js/schemas.js        schémas SVG (spectre, chronogrammes, courbes de croissance, arbres…)
 assets/js/probleme.js       moteur des mini-cours à réponse saisie
 assets/js/graphes.js        graphes et matrices : dessin SVG, algorithmes, correction
 assets/js/lecon.js          moteur des leçons (cours pas à pas, exemple, exercices)
+assets/js/trace.js          exécution animée d'un code C dans les leçons (boucles, cas)
 assets/js/enquete.js        moteur des enquêtes OSINT (méthodes, challenges, plaques SVG)
 assets/osint/               pièces des enquêtes (photos, PDF, DOCX) et leurs sources
 assets/js/app.js            onglets, routage, rendu des pages
@@ -364,7 +365,17 @@ du thème ; `legende` (facultatif) s'affiche dessous. Types disponibles :
   `afficherBits`, `afficherRoles` ;
 - `bus` : `protocole: "i2c" | "spi"`, `esclaves: [{ nom, detail? }]` ;
 - `chaine` : `blocs` (`"Titre\nDétail"`), `liens` (libellés des flèches), `accent`
-  (indice du bloc mis en avant).
+  (indice du bloc mis en avant) ;
+- `courbes` : `fonctions: [{ f: (n) => …, nom, style: 1-4, pointille }]`, `xMin`,
+  `xMax`, `yMax`, `n0` (rang en pointillé, `n0Texte`), `zone: { entre: [a, b] }`,
+  `{ dessous: a }` ou `{ dessus: a }` (indices dans `fonctions`, à partir de `depuis`) ;
+- `grille` : `n` (ou `lignes`, `colonnes`), `cases: (i, j) => 0 | 1 | 2`, `nomI`, `nomJ`,
+  `debutI`, `debutJ`, `sommes` (compte par ligne et total) ;
+- `arbre` : `racine`, `enfants: (v) => [...]`, `etiquette: (v) => "…"`, `niveaux`
+  (nombre d'appels par niveau) ;
+- `sauts` : `valeurs` successives d'un compteur, `max`, `borne: { v, nom }`,
+  `graduations`, `pas` (texte sur chaque saut) ;
+- `barres` : `barres: [{ nom, v, texte, style }]`, `log` (échelle logarithmique).
 
 ### 6. Configuration réseau Cisco — `type: "reseau"`
 
@@ -451,7 +462,20 @@ au-delà du TD). Les exercices sont de sept sortes :
 - `ordre` : cliquer des sommets dans l'ordre (parcours en profondeur, chaîne,
   cycle, chaîne augmentante, ordre topologique) ;
 - `matrice` : remplir une matrice case par case ;
-- `remettre` : remettre les étapes d'une démonstration dans l'ordre.
+- `remettre` : remettre les étapes d'une démonstration dans l'ordre ;
+- `lignes` : cliquer les lignes d'un code C (`code`, `reponse: [4, 5]`) ;
+- `cout` : choisir la classe (`Θ(1)`, `O(n²)`…) de lignes d'un code C
+  (`code`, `choix`, `lignes: { 2: "Θ(1)", 5: "O(n)" }`).
+
+Une étape du cours peut remplacer son schéma par une **animation** : le code C
+s'exécute pas à pas (lecture, pause, étape par étape), avec la ligne courante, la
+boucle active et son numéro de tour (couleur de la gouttière), les variables, le
+tableau, le nombre d'exécutions de chaque ligne et, au choix, d'opérations
+élémentaires. Des **scénarios** (meilleur cas, pire cas…) et un réglage de `n`
+comparent les coûts dans un bilan. Une **démonstration** (`demo`) s'affiche ligne
+par ligne, chaque ligne avec sa justification dans la marge. Animations et
+démonstrations s'utilisent aussi dans les autres parties de la leçon et dans les
+explications des exercices.
 
 Les exercices sur graphe sont corrigés par des **règles** (`regulier`,
 `connexe`, `biparti`, `clique`, `couplage`, `parcours`…) : toute réponse juste
@@ -483,7 +507,7 @@ chaque code de départ échoue, que la solution de chaque objectif « terminal �
 ses propres motifs, que chaque exercice « probleme » a une réponse attendue cohérente (chaque case de
 `champs` accepte sa propre réponse et ses variantes, chaque `schema` se dessine),
 que chaque exercice « reseau » est validé par sa solution (et **non** validé sans
-elle), que chaque leçon a un schéma à chaque étape et des exercices sur graphe
+elle), que chaque leçon a un schéma ou une animation à chaque étape, que chaque animation s'exécute pour chaque scénario et chaque `n` en donnant les comptes annoncés (`attendu`), des exercices sur graphe
 acceptant leur solution et refusant leur état de départ, que chaque enquête a des niveaux croissants, des pièces présentes sur le disque et des cases qui acceptent leur propre réponse, que les réponses des QCM désignent des choix existants et que chaque `tirage`
 ne dépasse pas la taille de sa banque.
 
