@@ -413,5 +413,48 @@
    schémas dessinables, niveaux croissants, chaque solution acceptée et
    chaque départ refusé, chaque case de réponse acceptant sa réponse.
 
+   10) EXERCICE DE TYPE "enquete" (moteur assets/js/enquete.js)
+   -------------------------------------------------------------
+   Deux onglets : Méthodes (pas à pas, avec exemple) puis Challenges,
+   niveaux 1 à 4 dans l'ordre croissant. Contenu riche : celui des
+   leçons, plus les pièces ci-dessous (utilisables partout).
+
+   {
+     type: "enquete",
+     id: "osint-enquete-…",
+     titre: "Enquête 1 — …",
+     description: "…",
+     methodes: [
+       { titre: "…", texte: [ … ], exemple: { titre: "Exemple", texte: [ … ] } }
+     ],
+     challenges: [
+       { niveau: 1, titre: "…", enonce: [ … ],
+         pieces: [
+           { image: "assets/osint/x.jpg", nom: "x.jpg", legende: "…" },
+           { fichier: "assets/osint/x.pdf", nom: "x.pdf", legende: "…" },
+           { texte: "Received: …", nom: "message.eml" },     // affiché + téléchargeable
+           { plaques: [ { format: "fni", texte: "5419 RT 29", noire: false },
+                        { format: "siv", texte: "GH-482-PK", region: "56" },
+                        { format: "eu", pays: "D", texte: "HH AB 1234" },
+                        { format: "uk", texte: "LB24 XKD" },
+                        { format: "ch", texte: "VS 123456" } ] }
+         ],
+         question: "…",
+         champs: [
+           { libelle: "Ville", reponse: "Saint-Brieuc", accepte: ["…"] },  // casse,
+                                       // accents, espaces, ponctuation ignorés
+           { libelle: "Année", reponse: 1995, tolerance: 0 },             // nombre
+           { libelle: "Position", gps: [48.4538, -2.0462], rayon: 0.15 }  // km
+         ],
+         indices: ["…", "…"],          // dévoilés un par un
+         solution: [ … ] },
+       { niveau: 1, type: "qcm", titre, enonce, pieces, question,
+         choix: ["…", "…"], reponse: 0, solution: "…" }
+     ]
+   }
+   Contrôlé par node outils/verifier-exercices.js : méthodes et
+   challenges présents, niveaux croissants, solution présente, chaque
+   pièce existe, chaque case accepte sa réponse et ses variantes.
+
    Vérifier toutes les solutions : node outils/verifier-exercices.js
    ============================================================= */

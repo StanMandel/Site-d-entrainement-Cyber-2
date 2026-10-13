@@ -24,7 +24,8 @@ choix existants, que chaque `tirage` tient dans sa banque, que chaque case `cham
 d'un `probleme` accepte sa propre réponse, que chaque `schema` se dessine, que les
 `id` sont uniques par matière, et pour chaque `lecon` qu'un schéma illustre chaque
 étape du cours et que chaque exercice sur graphe accepte sa `solution` et refuse son
-état de départ. À lancer après toute
+état de départ, et pour chaque `enquete` que les niveaux croissent, que les
+pièces existent et que chaque case accepte sa réponse. À lancer après toute
 modification d'exercice ou des moteurs d'exécution.
 
 Pour tester un seul exercice ou un moteur, utiliser les modules directement sous Node
@@ -77,6 +78,10 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
   Kosaraju, biparti, cliques, couplages…), dessin SVG des types `graphe` et
   `matrice` (classes `g-*`), et `evaluer(exo, reponse)` qui corrige les exercices
   sur graphe par règles.
+- `enquete.js` — `MoteurEnquete` : enquêtes OSINT en deux onglets (méthodes pas à
+  pas, challenges ★ à ★★★★ avec pièces à télécharger, indices, cases texte /
+  nombre / coordonnées GPS). `champEnqueteCorrect` et `Plaques.svg` (plaques
+  d'immatriculation) sont exportés pour Node. Pièces dans `assets/osint/`.
 
 **Exécution du code des exercices** (sans DOM, utilisable sous Node) :
 - `asm-x86.js` — `AsmX86` : assembleur + émulateur x86-64 syntaxe AT&T (sous-ensemble du

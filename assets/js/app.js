@@ -524,6 +524,10 @@ const App = {
       const e = (exo.cours || []).length, n = (exo.exercices || []).length;
       return { libelle: "Leçon", taille: e + " étape" + (e > 1 ? "s" : "") + " · " + n + " exercice" + (n > 1 ? "s" : "") };
     }
+    if (exo.type === "enquete") {
+      const n = (exo.challenges || []).length;
+      return { libelle: "Enquête", taille: n + " challenge" + (n > 1 ? "s" : "") };
+    }
     return { libelle: exo.type || "Exercice", taille: "" };
   },
 
@@ -569,7 +573,7 @@ const App = {
       )
     ));
 
-    const classeScene = { qcm: "qcm", code: "code-exo", terminal: "term-exo", jetpunk: "jp", probleme: "probleme-exo", reseau: "res-exo", lecon: "lecon-exo" };
+    const classeScene = { qcm: "qcm", code: "code-exo", terminal: "term-exo", jetpunk: "jp", probleme: "probleme-exo", reseau: "res-exo", lecon: "lecon-exo", enquete: "lecon-exo" };
     const scene = el("div", {
       class: classeScene[exo.type] || "jp",
       style: { "--tc": cours.couleur }
@@ -595,10 +599,11 @@ const App = {
     else if (exo.type === "probleme") MoteurProbleme.lancer(scene, exo, contexte);
     else if (exo.type === "reseau") MoteurReseau.lancer(scene, exo, contexte);
     else if (exo.type === "lecon") MoteurLecon.lancer(scene, exo, contexte);
+    else if (exo.type === "enquete") MoteurEnquete.lancer(scene, exo, contexte);
     else scene.append(el("div", { class: "vide" },
       el("div", { class: "emoji", texte: "🚧" }),
       el("h3", { texte: "Type d'exercice inconnu : " + exo.type }),
-      el("p", {}, "Les types disponibles sont ", el("code", { texte: "qcm" }), ", ", el("code", { texte: "jetpunk" }), ", ", el("code", { texte: "code" }), ", ", el("code", { texte: "terminal" }), ", ", el("code", { texte: "reseau" }), " et ", el("code", { texte: "lecon" }), ".")
+      el("p", {}, "Les types disponibles sont ", el("code", { texte: "qcm" }), ", ", el("code", { texte: "jetpunk" }), ", ", el("code", { texte: "code" }), ", ", el("code", { texte: "terminal" }), ", ", el("code", { texte: "reseau" }), ", ", el("code", { texte: "lecon" }), " et ", el("code", { texte: "enquete" }), ".")
     ));
   },
 

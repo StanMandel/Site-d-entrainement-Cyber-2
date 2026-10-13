@@ -1668,3 +1668,45 @@ body.dans-exercice .entete { display: none; }
   .lc-etape-corps { grid-template-columns: 1fr; }
   .lc-onglet { padding-right: .7rem; font-size: .84rem; }
 }
+
+/* ------------------ 16. Enquêtes OSINT ------------------------ */
+.type-enquete { background: color-mix(in srgb, #D9480F 13%, var(--teinte)); color: color-mix(in srgb, #D9480F 68%, var(--ombrage)); }
+
+.eq-pieces { display: flex; flex-direction: column; gap: .7rem; margin-top: .9rem; }
+.eq-piece {
+  margin: 0; border-radius: var(--r-m); background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--c) 25%, var(--bord));
+}
+.eq-piece-image { overflow: hidden; }
+.eq-image-lien { display: block; background: var(--fond-2); }
+.eq-image-lien img { display: block; width: 100%; max-height: 70vh; object-fit: contain; cursor: zoom-in; }
+.eq-piece figcaption, .eq-piece-fichier, .eq-piece-tete {
+  display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; padding: .5rem .7rem;
+}
+.eq-piece figcaption .btn, .eq-piece-fichier .btn, .eq-piece-tete .btn { margin-left: auto; }
+.eq-nom { font-family: var(--mono); font-size: .85rem; font-weight: 700; color: var(--texte); }
+.eq-legende { font-size: .85rem; color: var(--texte-doux); }
+.eq-piece-tete { border-bottom: 1px solid var(--bord); }
+.eq-brut {
+  margin: 0; border: 0; border-radius: 0 0 var(--r-m) var(--r-m);
+  max-height: 22rem; overflow: auto; white-space: pre; font-size: .78rem;
+}
+.eq-question { margin-top: .9rem; }
+.eq-question p { color: var(--texte); font-weight: 650; }
+
+.eq-plaques { display: flex; flex-wrap: wrap; gap: .8rem; margin: .8rem 0 0; }
+.eq-plaque { flex: 0 1 300px; min-width: 0; }
+.eq-plaque svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 2px 3px color-mix(in srgb, var(--ombrage) 25%, transparent)); }
+.eq-plaques figcaption { flex-basis: 100%; font-size: .85rem; color: var(--texte-doux); }
+
+.eq-bloc-indices { margin-top: .7rem; display: flex; flex-direction: column; align-items: flex-start; gap: .45rem; }
+.eq-indices:empty { display: none; }
+.eq-indices {
+  margin: 0; padding: .55rem .9rem .55rem 2rem; align-self: stretch; border-radius: var(--r-s);
+  background: var(--or-fond-2); border: 1px solid var(--or-bord); border-left: 4px solid var(--or);
+  display: flex; flex-direction: column; gap: .3rem;
+}
+.eq-indices li::marker { color: var(--or-texte); font-weight: 800; }
+.eq-indices li p { margin-top: 0; color: var(--texte); font-size: .9rem; }
+.eq-exemple .eq-piece { margin-top: .6rem; }
+.eq-exemple .bloc-code { white-space: pre; overflow-x: auto; }

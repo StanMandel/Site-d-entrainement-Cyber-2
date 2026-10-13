@@ -10,6 +10,9 @@
    schémas se dessinent, les niveaux des exercices ne décroissent pas,
    chaque exercice sur graphe est validé par sa solution et refusé
    au départ, chaque case accepte sa propre réponse.
+   Pour chaque « enquete » : méthodes et challenges présents, niveaux
+   croissants, chaque case accepte sa propre réponse (coordonnées
+   comprises), chaque pièce (image, fichier) existe dans le dossier.
    Pour chaque exercice de programmation :
      - la solution doit réussir tous les tests ;
      - le code de départ ne doit pas réussir ;
@@ -27,6 +30,7 @@ const MoteurReseau = require(path.join(racine, "assets/js/reseau-cisco.js"));
 const { looseReponse, champCorrect, formaterReponse } = require(path.join(racine, "assets/js/probleme.js"));
 const Schemas = require(path.join(racine, "assets/js/schemas.js"));
 const Graphes = require(path.join(racine, "assets/js/graphes.js"));
+const Enquete = require(path.join(racine, "assets/js/enquete.js"));
 
 const bac = {};
 vm.createContext(bac);
@@ -109,6 +113,10 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
         verifierLecon(slug + "/" + exo.id, exo);
         continue;
       }
+      if (exo.type === "enquete") {
+        verifierEnquete(slug + "/" + exo.id, exo);
+        continue;
+      }
       if (exo.type === "reseau") {
         verifies++;
         const tests = exo.tests || [];
@@ -145,6 +153,49 @@ for (const [slug, contenu] of Object.entries(bac.CONTENU)) {
       if (depart.ok) signaler(slug + "/" + exo.id + " : le code de départ réussit déjà");
     }
   }
+}
+
+/* ---------------- Enquêtes (moteur assets/js/enquete.js) ---------------- */
+
+/* Toutes les pièces (image, fichier) citées dans une donnée, à toute profondeur. */
+function piecesDe(donnee, liste = []) {
+  if (Array.isArray(donnee)) donnee.forEach((d) => piecesDe(d, liste));
+  else if (donnee && typeof donnee === "object") {
+    if (typeof donnee.image === "string") liste.push(donnee.image);
+    if (typeof donnee.fichier === "string") liste.push(donnee.fichier);
+    Object.values(donnee).forEach((v) => piecesDe(v, liste));
+  }
+  return liste;
+}
+
+function verifierEnquete(ou, enquete) {
+  if (!(enquete.methodes || []).length) signaler(ou + " : aucune méthode");
+  const challenges = enquete.challenges || [];
+  if (!challenges.length) { signaler(ou + " : aucun challenge"); return; }
+  for (const chemin of new Set(piecesDe([enquete.methodes, challenges]))) {
+    if (!fs.existsSync(path.join(racine, chemin))) signaler(ou + " : pièce introuvable « " + chemin + " »");
+  }
+  let niveau = 0;
+  challenges.forEach((ch, n) => {
+    const ici = ou + " / challenge " + (n + 1);
+    if ((ch.niveau || 1) < niveau) signaler(ici + " : niveau inférieur au challenge précédent");
+    niveau = ch.niveau || 1;
+    if (!ch.solution) signaler(ici + " : solution absente");
+    if (ch.type === "qcm") {
+      const bonnes = [].concat(ch.reponse);
+      if (!bonnes.length || bonnes.some((i) => !Number.isInteger(i) || i < 0 || i >= (ch.choix || []).length)) signaler(ici + " : réponse hors des choix");
+      return;
+    }
+    if (!(ch.champs || []).length) { signaler(ici + " : aucune case de réponse"); return; }
+    for (const champ of ch.champs) {
+      const essais = champ.gps
+        ? [champ.gps.join(", "), champ.gps.map((x) => String(x).replace(".", ",")).join(" ")]
+        : [].concat(typeof champ.reponse === "number" ? String(champ.reponse) : champ.reponse, champ.accepte || []);
+      for (const e of essais) {
+        if (!Enquete.champEnqueteCorrect(e, champ)) signaler(ici + " : la case « " + champ.libelle + " » refuse « " + e + " »");
+      }
+    }
+  });
 }
 
 /* ---------------- Leçons (moteur assets/js/lecon.js) ---------------- */

@@ -27,6 +27,8 @@ assets/js/schemas.js        schémas SVG des problèmes (spectre, chronogrammes,
 assets/js/probleme.js       moteur des mini-cours à réponse saisie
 assets/js/graphes.js        graphes et matrices : dessin SVG, algorithmes, correction
 assets/js/lecon.js          moteur des leçons (cours pas à pas, exemple, exercices)
+assets/js/enquete.js        moteur des enquêtes OSINT (méthodes, challenges, plaques SVG)
+assets/osint/               pièces des enquêtes (photos, PDF, DOCX) et leurs sources
 assets/js/app.js            onglets, routage, rendu des pages
 data/cours.js               liste des 14 matières (nom, couleur, emoji)
 data/cours/<slug>.js        LE CONTENU : guides, chapitres et exercices
@@ -458,6 +460,18 @@ s'écrivent en une ligne (`sommets: "1:0,1 2:1,0"`, `aretes: "1-2 2>3"`) et sont
 dessinés par `assets/js/graphes.js`. Format complet : `data/cours/_modele.js`
 (section 9).
 
+### 8. Enquête OSINT — `type: "enquete"`
+
+Une enquête se parcourt en **deux onglets** : **Méthodes** (petit cours pas à pas,
+chaque méthode suivie d'un exemple) puis **Challenges**, du plus facile au plus dur
+(★ à ★★★★). Un challenge fournit des **pièces** (photo affichée et téléchargeable,
+fichier à télécharger, texte brut comme un `.eml`, plaques d'immatriculation
+dessinées), des cases de réponse (texte comparé sans casse, accents ni ponctuation ;
+nombre ; **coordonnées GPS** acceptées dans un rayon donné), des **indices**
+dévoilés un par un et une solution rédigée. Un challenge peut aussi être un QCM.
+Les pièces sont dans `assets/osint/` ; leurs sources et licences sont listées dans
+`assets/osint/SOURCES.md`. Format complet : `data/cours/_modele.js` (section 10).
+
 Après tout ajout ou modification, lancer depuis le dossier du site :
 
 ```
@@ -470,7 +484,7 @@ ses propres motifs, que chaque exercice « probleme » a une réponse attendue c
 `champs` accepte sa propre réponse et ses variantes, chaque `schema` se dessine),
 que chaque exercice « reseau » est validé par sa solution (et **non** validé sans
 elle), que chaque leçon a un schéma à chaque étape et des exercices sur graphe
-acceptant leur solution et refusant leur état de départ, que les réponses des QCM désignent des choix existants et que chaque `tirage`
+acceptant leur solution et refusant leur état de départ, que chaque enquête a des niveaux croissants, des pièces présentes sur le disque et des cases qui acceptent leur propre réponse, que les réponses des QCM désignent des choix existants et que chaque `tirage`
 ne dépasse pas la taille de sa banque.
 
 ## Points d'attention

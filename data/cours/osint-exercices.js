@@ -1,1651 +1,1074 @@
 /* =============================================================
-   OSINT — Chapitres 3 à 5
+   OSINT — enquêtes pratiques (type "enquete", moteur enquete.js)
    -------------------------------------------------------------
-   Complète le cours « osint » déjà déclaré par data/cours/osint.js :
-     - chapitre 3 : les outils et les types d'OSINT ;
-     - chapitre 4 : l'ingénierie sociale (dont l'analyse du
-       courriel d'hameçonnage étudié en oral) ;
-     - chapitre 5 : le quizz final, 20 questions tirées sur 50.
+   Chaque enquête commence par un petit cours de méthodes, puis
+   enchaîne des challenges du plus facile au plus dur. Les
+   techniques des enquêtes précédentes resservent dans les
+   suivantes ; l'enquête finale les combine toutes.
 
-   Même principe que les chapitres 1 et 2 : un micro-cours affiché
-   à gauche, puis un micro-quizz sur ce seul concept.
+   Pièces : assets/osint/ (fabriquées hors du site). Les photos
+   viennent de Panoramax (photos de rue libres, visages et plaques
+   floutés) ; leurs métadonnées d'origine ont été retirées, et les
+   EXIF des challenges « métadonnées » sont fabriqués. Personnes,
+   entreprises (Aqualenn, Morgat RH Conseil, collectif Brume) et
+   domaines en .example sont fictifs.
    ============================================================= */
 
 (function () {
 
   const cours = CONTENU["osint"];
 
-  /* =========================================================
-     CHAPITRE 3 — Les outils et les types d'OSINT
-     ========================================================= */
+  /* Pièces réutilisées d'un challenge à l'autre. */
+  const COURRIEL_BRUME = [
+    "Return-Path: <collectif.brume@boite-anonyme.example>",
+    "Received: from smtp.boite-anonyme.example (smtp.boite-anonyme.example [203.0.113.18])",
+    "        by mx.aqualenn.example (Postfix) with ESMTPS id 7D2A41C02",
+    "        for <direction@aqualenn.example>; Tue, 25 Jul 2017 21:47:06 +0200 (CEST)",
+    "Received: from LAPTOP-GKERLAOU (unknown [198.51.100.140])",
+    "        (Authenticated sender: collectif.brume)",
+    "        by smtp.boite-anonyme.example (Postfix) with ESMTPSA id 0F3B2",
+    "        for <direction@aqualenn.example>; Tue, 25 Jul 2017 19:47:03 +0000 (UTC)",
+    "From: \"Collectif Brume\" <collectif.brume@boite-anonyme.example>",
+    "To: direction@aqualenn.example",
+    "Subject: Nous savons ce que vous rejetez",
+    "Date: Tue, 25 Jul 2017 21:46:58 +0200",
+    "Message-ID: <5977a1e2.4c1d@boite-anonyme.example>",
+    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:52.0) Gecko/20100101 Thunderbird/52.2.1",
+    "MIME-Version: 1.0",
+    "Content-Type: multipart/mixed; boundary=\"------------B1F4\"",
+    "",
+    "--------------B1F4",
+    "Content-Type: text/plain; charset=utf-8",
+    "",
+    "Madame, Monsieur,",
+    "",
+    "La photo jointe a été prise aujourd'hui, à deux pas de chez vous.",
+    "Notre communiqué suit. Vous avez 72 heures.",
+    "",
+    "Collectif Brume",
+    "",
+    "--------------B1F4",
+    "Content-Type: image/jpeg; name=\"brume-photo.jpg\"",
+    "Content-Disposition: attachment; filename=\"brume-photo.jpg\"",
+    "",
+    "--------------B1F4",
+    "Content-Type: application/pdf; name=\"brume-revendication.pdf\"",
+    "Content-Disposition: attachment; filename=\"brume-revendication.pdf\"",
+    "",
+    "--------------B1F4--"
+  ].join("\n");
 
-  cours.chapitres.push({
-    id: "ch3",
-    titre: "Chapitre 3 — Les outils et les types d'OSINT",
-    description: "Moteurs de recherche, images, identifiants, réseaux sociaux, sites web.",
-    exercices: [
-
-      {
-        type: "qcm",
-        id: "osint-panorama",
-        titre: "Qui fait de l'OSINT, et sur quoi ?",
-        description: "Public cible et grandes familles de sources.",
-        cours: [
-          "Quatre publics sont cités comme utilisateurs de l'OSINT :",
-          [
-            "les **gouvernements**,",
-            "les **journalistes**,",
-            "les **forces de l'ordre**,",
-            "les **citoyens**."
-          ],
-          "Et sept familles de sources, qui structurent tout le chapitre :",
-          [
-            "**Moteurs de recherche** (dont la recherche avancée).",
-            "**Courriels et autres identifiants**.",
-            "**Réseaux sociaux**.",
-            "**Sites web**.",
-            "**Ingénierie sociale** (hameçonnage, appels téléphoniques…).",
-            "**Images** (recherche inversée, données EXIF, étude géographique, données satellite, vidéos).",
-            "**Physique** (reconnaissance des lieux)."
-          ]
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quels publics sont cités comme utilisateurs de l'OSINT ?",
-            choix: ["Les journalistes", "Les forces de l'ordre", "Les citoyens", "Les fabricants d'antivirus"],
-            reponse: [0, 1, 2],
-            explication: "Gouvernements, journalistes, forces de l'ordre et citoyens."
-          },
-          {
-            enonce: "La recherche inversée d'image et les données EXIF appartiennent à quelle famille ?",
-            choix: ["Les images", "Les réseaux sociaux", "Les sites web", "L'ingénierie sociale"],
-            reponse: 0,
-            explication: "Recherche inversée, reconnaissance faciale, EXIF, géolocalisation et vidéos : la famille « images »."
-          },
-          {
-            enonce: "Un appel téléphonique pour obtenir un mot de passe relève de quelle famille ?",
-            choix: ["L'ingénierie sociale", "Les moteurs de recherche", "Les courriels et identifiants", "Le physique"],
-            reponse: 0,
-            explication: "L'ingénierie sociale couvre l'hameçonnage par courriel, les appels téléphoniques et le reste."
-          },
-          {
-            enonce: "La reconnaissance des lieux et les données satellite relèvent de :",
-            choix: [
-              "L'étude géographique et la famille « physique »",
-              "L'analyse des sites web",
-              "Les réseaux sociaux",
-              "Les moteurs de recherche"
-            ],
-            reponse: 0,
-            explication: "Étude géographique, reconnaissance des lieux et données satellite complètent la partie images / physique."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-moteurs",
-        titre: "Moteurs de recherche avancés",
-        description: "Google dorks, GHDB, et les moteurs basés sur le balayage de ports.",
-        cours: [
-          "Un moteur de recherche ordinaire devient un outil de reconnaissance dès qu'on utilise ses **opérateurs avancés**, appelés **Google dorks**.",
-          {
-            entetes: ["Opérateur", "Rôle"],
-            lignes: [
-              ["`site:`", "Restreint la recherche à un domaine"],
-              ["`filetype:` / `ext:`", "Ne garde qu'un type de fichier (pdf, xlsx, conf…)"],
-              ["`inurl:`", "Le mot doit figurer dans l'URL"],
-              ["`intitle:`", "Le mot doit figurer dans le titre de la page"],
-              ["`intext:`", "Le mot doit figurer dans le corps de la page"],
-              ["`-`", "Exclut un terme"],
-              ["Guillemets", "Expression exacte"]
-            ]
-          },
-          "La **Google Hacking Database (GHDB)**, hébergée par exploit-db, recense des dorks déjà éprouvés pour trouver fichiers sensibles, pages d'administration et messages d'erreur révélateurs.",
-          "Un autre type de moteur indexe non pas des pages mais des **machines**, à partir du **balayage de ports** : il permet de retrouver des services exposés sur Internet, avec leurs bannières et leurs versions."
-        ],
-        exemple: {
-          titre: "Exemple",
-          legende: "Quelques dorks",
-          code: "site:exemple.fr filetype:pdf\nsite:exemple.fr inurl:admin\nintitle:\"index of\" \"backup\"\nsite:exemple.fr -www"
-        },
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Que fait l'opérateur `filetype:` dans une requête ?",
-            choix: [
-              "Il ne garde que les résultats d'un type de fichier donné",
-              "Il restreint la recherche à un domaine",
-              "Il cherche le mot dans l'URL",
-              "Il exclut un format de fichier"
-            ],
-            reponse: 0,
-            explication: "`filetype:pdf` ne renvoie que des PDF."
-          },
-          {
-            enonce: "Quelle requête cherche les pages d'administration du domaine exemple.fr ?",
-            choix: [
-              "site:exemple.fr inurl:admin",
-              "intitle:exemple.fr admin",
-              "filetype:exemple.fr admin",
-              "intext:admin -exemple.fr"
-            ],
-            reponse: 0,
-            explication: "`site:` cible le domaine, `inurl:` cherche le mot dans l'adresse."
-          },
-          {
-            enonce: "Que recense la Google Hacking Database (GHDB) ?",
-            choix: [
-              "Des requêtes avancées éprouvées pour trouver des informations sensibles",
-              "Les mots de passe issus de fuites de données",
-              "La liste des serveurs exposés sur Internet",
-              "Les vulnérabilités de Google"
-            ],
-            reponse: 0,
-            explication: "La GHDB, hébergée par exploit-db, est un catalogue de dorks."
-          },
-          {
-            enonce: "Qu'indexe un moteur de recherche fondé sur le balayage de ports ?",
-            choix: [
-              "Les machines et services exposés sur Internet, avec leurs bannières",
-              "Les pages web publiques",
-              "Les publications des réseaux sociaux",
-              "Les images et leurs métadonnées"
-            ],
-            reponse: 0,
-            explication: "Ce type de moteur référence des hôtes et des services, pas des pages."
-          },
-          {
-            enonce: "À quoi sert le signe `-` devant un terme de recherche ?",
-            choix: ["À exclure ce terme des résultats", "À le rendre obligatoire", "À chercher une expression exacte", "À chercher dans le titre"],
-            reponse: 0,
-            explication: "`site:exemple.fr -www` écarte les résultats contenant « www »."
-          },
-          {
-            enonce: "Pourquoi les Google dorks relèvent-ils de la reconnaissance passive ?",
-            choix: [
-              "L'attaquant interroge l'index du moteur, pas les serveurs de la cible",
-              "Les requêtes sont anonymisées par le moteur",
-              "Les résultats sont chiffrés",
-              "Le moteur avertit la cible à la place de l'attaquant"
-            ],
-            reponse: 0,
-            explication: "C'est le moteur qui a visité le site : l'attaquant, lui, n'a touché à rien."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-image-inversee",
-        titre: "Images — recherche inversée et reconnaissance faciale",
-        description: "Ce qu'une simple photo permet de retrouver.",
-        cours: [
-          "La **recherche inversée** part d'une image et cherche les pages où elle apparaît. À partir d'une seule photo, on peut retrouver :",
-          [
-            "l'**identité** de la personne photographiée,",
-            "sa **localisation**, déduite des immeubles et des alentours,",
-            "ses **autres profils** en ligne, si les photos de profil se ressemblent."
-          ],
-          "La **reconnaissance faciale** va plus loin : elle ne cherche pas la même image mais le même **visage**. Elle est souvent plus efficace que la recherche inversée, surtout si l'outil s'appuie sur une banque d'images très vaste.",
-          "Réutiliser la même photo de profil sur plusieurs services suffit donc à relier des comptes qu'on croyait séparés."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Sur quoi repose une recherche inversée d'image ?",
-            choix: [
-              "On part d'une image pour retrouver les pages où elle apparaît",
-              "On part d'un nom pour retrouver des images",
-              "On lit les métadonnées EXIF du fichier",
-              "On compare les empreintes de hachage des fichiers du disque"
-            ],
-            reponse: 0,
-            explication: "L'image est la requête, les pages sont les résultats."
-          },
-          {
-            enonce: "Qu'est-ce qui distingue la reconnaissance faciale de la recherche inversée ?",
-            choix: [
-              "Elle cherche le même visage, pas la même image",
-              "Elle nécessite les données EXIF",
-              "Elle ne fonctionne que sur les réseaux sociaux",
-              "Elle donne toujours la position GPS"
-            ],
-            reponse: 0,
-            explication: "Une autre photo du même visage sera trouvée, même si l'image n'a jamais été publiée ailleurs."
-          },
-          {
-            enonce: "Qu'est-ce qu'une photo permet de déduire, même sans métadonnées ?",
-            choix: [
-              "La localisation, à partir des immeubles et des alentours",
-              "Le mot de passe du compte qui l'a publiée",
-              "L'adresse IP de l'appareil photo",
-              "La liste des contacts de la personne"
-            ],
-            reponse: 0,
-            explication: "Le décor est une donnée : bâtiments, enseignes, végétation, panneaux."
-          },
-          {
-            enonce: "Pourquoi réutiliser la même photo de profil sur plusieurs sites est-il risqué ?",
-            choix: [
-              "La recherche inversée relie alors entre eux des comptes que l'on croyait séparés",
-              "La photo perd ses données EXIF",
-              "Les sites partagent automatiquement les mots de passe",
-              "Les moteurs de recherche refusent alors de l'indexer"
-            ],
-            reponse: 0,
-            explication: "Une image identique est un identifiant commun entre des profils sans autre lien apparent."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-exif",
-        titre: "Images — les données EXIF",
-        description: "Ce que le fichier porte en plus de l'image.",
-        cours: [
-          "Une image peut transporter des **données EXIF** et d'autres métadonnées, écrites par l'appareil au moment de la prise de vue. On y trouve notamment :",
-          [
-            "l'**emplacement** (coordonnées GPS),",
-            "les **caractéristiques de l'appareil** (marque, modèle, objectif, réglages),",
-            "l'**auteur**,",
-            "la **date et l'heure de capture**."
-          ],
-          "L'outil de référence pour les lire et les écrire est **`exiftool`**.",
-          "**Attention :** les réseaux sociaux traditionnels **conservaient** autrefois les EXIF, mais ce n'est plus le cas aujourd'hui — ils les suppriment à la publication. Une image récupérée sur un réseau social sera donc le plus souvent muette ; une image reçue par courriel ou téléchargée depuis un site personnel, beaucoup moins."
-        ],
-        exemple: {
-          titre: "Exemple",
-          legende: "Lire les métadonnées d'une photo",
-          code: "exiftool photo.jpg\nexiftool -gps:all -createdate -model photo.jpg\nexiftool -all= photo.jpg      # efface les metadonnees"
-        },
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Que peuvent contenir les données EXIF d'une photo ?",
-            choix: [
-              "L'emplacement de la prise de vue",
-              "Le modèle de l'appareil",
-              "La date de capture",
-              "Le mot de passe du compte de l'auteur"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Emplacement, caractéristiques de l'appareil, auteur et date de capture."
-          },
-          {
-            enonce: "Quel outil est cité pour lire les métadonnées d'une image ?",
-            choix: ["exiftool", "theHarvester", "cewl", "HTTrack"],
-            reponse: 0,
-            explication: "`exiftool` lit, écrit et efface les métadonnées de très nombreux formats."
-          },
-          {
-            enonce: "Que deviennent les données EXIF d'une photo publiée aujourd'hui sur un réseau social traditionnel ?",
-            choix: [
-              "Elles sont supprimées à la publication",
-              "Elles sont conservées et visibles par tous",
-              "Elles sont chiffrées puis conservées",
-              "Elles sont remplacées par la position du serveur"
-            ],
-            reponse: 0,
-            explication: "Les réseaux les conservaient autrefois ; ils les retirent désormais."
-          },
-          {
-            enonce: "Quelle image a le plus de chances de contenir encore ses EXIF ?",
-            choix: [
-              "Une photo reçue en pièce jointe d'un courriel",
-              "Une photo de profil publiée sur un réseau social",
-              "Une capture d'écran d'un fil d'actualité",
-              "Une vignette générée par un réseau social"
-            ],
-            reponse: 0,
-            explication: "Le fichier d'origine n'a pas été retraité par une plateforme : ses métadonnées sont intactes."
-          },
-          {
-            enonce: "Pourquoi effacer les EXIF avant de publier une photo ?",
-            choix: [
-              "Pour ne pas divulguer sa position, son matériel et ses habitudes",
-              "Pour réduire la définition de l'image",
-              "Pour empêcher la recherche inversée",
-              "Pour empêcher la reconnaissance faciale"
-            ],
-            reponse: 0,
-            explication: "Les EXIF fuitent le lieu et le moment ; en revanche ils ne protègent en rien du contenu visible de l'image."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-geolocalisation",
-        titre: "Images — positionnement géographique",
-        description: "Localiser une photo sans la moindre métadonnée.",
-        cours: [
-          "Même dépouillée de ses métadonnées, une image reste localisable par son **contenu**. Des outils cartographiques aident à la recherche :",
-          [
-            "**Google Maps** et son **StreetView**,",
-            "**Bing Maps**,",
-            "**OpenStreetMap**, dont l'API est ouverte."
-          ],
-          "L'**aperçu 3D** et le **StreetView** accélèrent beaucoup la comparaison entre la photo et le terrain.",
-          "La méthode est celle de la **triangulation visuelle** : plusieurs indices banals pris ensemble — un restaurant franchisé, un hôtel, un panneau, une ligne de tramway — restreignent la zone jusqu'à un point unique."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quels outils cartographiques sont cités pour localiser une image ?",
-            choix: ["Google Maps", "Bing Maps", "OpenStreetMap", "Maltego"],
-            reponse: [0, 1, 2],
-            explication: "Maltego est un outil de cartographie de données en graphe, pas de cartographie géographique."
-          },
-          {
-            enonce: "Quel atout particulier OpenStreetMap présente-t-il ?",
-            choix: [
-              "Son API est disponible",
-              "Il fournit les données EXIF des photos",
-              "Il propose la reconnaissance faciale",
-              "Il indexe les ports ouverts"
-            ],
-            reponse: 0,
-            explication: "Une API ouverte permet d'automatiser les recherches."
-          },
-          {
-            enonce: "Comment localiser une photo qui ne porte aucune métadonnée ?",
-            choix: [
-              "En croisant les éléments visibles — enseignes, bâtiments, mobilier urbain — avec la cartographie",
-              "En interrogeant le serveur qui l'héberge",
-              "C'est impossible sans EXIF",
-              "En cherchant le nom du fichier dans un moteur de recherche"
-            ],
-            reponse: 0,
-            explication: "Le contenu de l'image est lui-même une source ; la triangulation visuelle fait le reste."
-          },
-          {
-            enonce: "Pourquoi un restaurant franchisé visible sur une photo est-il un indice utile ?",
-            choix: [
-              "Ses implantations sont répertoriées : croisé avec un autre repère, il restreint la zone",
-              "Les franchises publient les photos de leurs clients",
-              "Son enseigne contient des données EXIF",
-              "Les franchises exposent leurs caméras sur Internet"
-            ],
-            reponse: 0,
-            explication: "La simple vue d'un restaurant franchisé et d'un hôtel peut suffire à trianguler une position."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-courriels",
-        titre: "Courriels et identifiants",
-        description: "Vérifier une adresse, retrouver un pseudonyme.",
-        cours: [
-          "Une adresse de courriel est un point d'entrée : elle sert à la fois de cible d'hameçonnage et de fil conducteur entre les comptes.",
-          [
-            "**Vérifier** qu'une adresse existe vraiment, avant d'en faire une cible (services de type email verifier, comme **Hunter**).",
-            "**Deviner le format** des adresses d'une entreprise (`prenom.nom@`, `pnom@`…) puis le généraliser à tout l'annuaire.",
-            "**Relier les comptes** : un même identifiant ou pseudonyme réutilisé sur plusieurs plateformes trahit une même personne.",
-            "**Tester un identifiant directement sur un site**, ou automatiser cette recherche avec un service du type **WhatsMyName**."
-          ],
-          "Un seul pseudonyme réutilisé partout est souvent plus révélateur qu'un nom de famille."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "À quoi sert un service comme Hunter ?",
-            choix: [
-              "Vérifier si un courriel est valide et retrouver les adresses d'une entreprise",
-              "Scanner les ports d'un serveur",
-              "Lire les métadonnées d'une image",
-              "Archiver les anciennes versions d'un site"
-            ],
-            reponse: 0,
-            explication: "C'est un vérificateur d'adresses, doublé d'un annuaire d'adresses d'entreprise."
-          },
-          {
-            enonce: "Que permet un service comme WhatsMyName ?",
-            choix: [
-              "Chercher un même identifiant sur un grand nombre de sites",
-              "Retrouver le vrai nom derrière une adresse IP",
-              "Générer des mots de passe",
-              "Cartographier un réseau interne"
-            ],
-            reponse: 0,
-            explication: "Il teste un pseudonyme sur une longue liste de plateformes."
-          },
-          {
-            enonce: "Pourquoi une adresse de courriel intéresse-t-elle un attaquant, au-delà de l'envoi d'un message ?",
-            choix: [
-              "Elle sert de fil conducteur pour relier des comptes en ligne",
-              "Elle contient le mot de passe chiffré de la personne",
-              "Elle révèle la version du serveur de messagerie",
-              "Elle donne accès à la boîte de réception"
-            ],
-            reponse: 0,
-            explication: "Un même identifiant réutilisé fait le lien entre des profils séparés."
-          },
-          {
-            enonce: "Connaître le format des adresses d'une entreprise sert surtout à :",
-            choix: [
-              "Déduire l'adresse de n'importe quel employé dont on connaît le nom",
-              "Contourner le filtre anti-spam",
-              "Accéder au serveur de messagerie",
-              "Vérifier la signature DKIM"
-            ],
-            reponse: 0,
-            explication: "Un format et un annuaire professionnel suffisent à reconstituer les adresses de tout le personnel."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-outils-avances",
-        titre: "Outils avancés : theHarvester, Maltego, SpiderFoot",
-        description: "Automatiser la collecte et la mettre en graphe.",
-        cours: [
-          { titre: "theHarvester" },
-          "Collecte à partir d'un nom de domaine, via de nombreuses sources (« plugins ») : **courriels**, **sous-domaines**, **adresses IP**, **noms** et **URL**. Disponible dans Kali.",
-          { titre: "Maltego" },
-          "Présente le renseignement **sous forme de graphe**. On part d'un objet (un domaine, un courriel…) et on lui applique des **Transforms** qui font apparaître les objets liés : courriels, domaines, serveurs, informations publiques Wikipédia, réseaux sociaux. La version **Community**, gratuite, est **limitée** — en général **12 résultats maximum par Transform**.",
-          { titre: "SpiderFoot" },
-          "**Automatise** l'OSINT pour le renseignement sur les menaces et la **cartographie de la surface d'attaque**.",
-          "Ces trois outils font la même chose que la recherche manuelle, mais à grande échelle : leur intérêt est le **croisement** automatique des sources."
-        ],
-        exemple: {
-          titre: "Exemple",
-          legende: "theHarvester",
-          code: "theHarvester -d exemple.fr -b all\ntheHarvester -d exemple.fr -b bing -l 500"
-        },
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Que collecte theHarvester à partir d'un nom de domaine ?",
-            choix: [
-              "Des courriels, des sous-domaines, des IP, des noms et des URL",
-              "Les mots de passe des employés",
-              "Les métadonnées EXIF des images du site",
-              "Les journaux du serveur web"
-            ],
-            reponse: 0,
-            explication: "C'est un moissonneur : courriels, sous-domaines, IP, noms, URL."
-          },
-          {
-            enonce: "Sur quel principe Maltego repose-t-il ?",
-            choix: [
-              "Un graphe d'objets sur lesquels on applique des Transforms",
-              "Un balayage de ports sur une plage d'adresses",
-              "Une base de mots de passe cassés",
-              "Une archive des anciennes versions des sites web"
-            ],
-            reponse: 0,
-            explication: "Chaque Transform part d'un objet du graphe pour en faire apparaître d'autres."
-          },
-          {
-            enonce: "Quelle est la limite habituelle de la version Community de Maltego ?",
-            choix: [
-              "Environ 12 résultats par Transform",
-              "Un seul graphe par jour",
-              "Aucun accès aux réseaux sociaux",
-              "Trois domaines analysés au total"
-            ],
-            reponse: 0,
-            explication: "La version gratuite plafonne en général à 12 résultats par Transform."
-          },
-          {
-            enonce: "À quoi sert SpiderFoot ?",
-            choix: [
-              "Automatiser l'OSINT et cartographier la surface d'attaque",
-              "Simuler la voix d'un interlocuteur",
-              "Copier un site web en local",
-              "Vérifier la validité d'une adresse de courriel"
-            ],
-            reponse: 0,
-            explication: "SpiderFoot automatise la collecte pour le renseignement sur les menaces."
-          },
-          {
-            enonce: "Quel est l'apport principal de ces outils par rapport à une recherche manuelle ?",
-            choix: [
-              "Le croisement automatique d'un grand nombre de sources",
-              "L'accès à des informations noires",
-              "La garantie de l'anonymat de l'analyste",
-              "La suppression des données trouvées chez la cible"
-            ],
-            reponse: 0,
-            explication: "Ils ne donnent pas accès à autre chose : ils vont simplement beaucoup plus vite et croisent mieux."
-          },
-          {
-            enonce: "Sur quelle distribution theHarvester est-il directement disponible ?",
-            choix: ["Kali", "Windows Server", "pfSense", "Android"],
-            reponse: 0,
-            explication: "Il fait partie des outils intégrés à Kali."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-fuites",
-        titre: "Fuites de données et mots de passe",
-        description: "Ce que les brèches passées disent d'une cible.",
-        cours: [
-          "Les fuites de données anciennes restent exploitables longtemps. Plusieurs services les indexent :",
-          [
-            "**Have I Been Pwned** — indique si une adresse apparaît dans une fuite connue.",
-            "**DeHashed** — moteur de recherche sur les données issues de brèches.",
-            "**Les archives de hashes cassés** — listes de condensats déjà cassés, accumulées au fil des années."
-          ],
-          "Le raisonnement de l'attaquant est direct : **pour chaque courriel trouvé, un mot de passe faible pourrait suffire à accéder au compte sans rien compromettre du système**. Aucun exploit, aucune alerte — une simple connexion valide.",
-          "D'où deux réflexes : ne jamais réemployer un mot de passe d'un service à l'autre, et activer l'authentification multifacteur."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Que permet de vérifier Have I Been Pwned ?",
-            choix: [
-              "Si une adresse de courriel apparaît dans une fuite de données connue",
-              "Si un mot de passe est assez long",
-              "Si un site web est encore en ligne",
-              "Si un fichier contient un malware"
-            ],
-            reponse: 0,
-            explication: "Le service compare l'adresse aux brèches qu'il a indexées."
-          },
-          {
-            enonce: "Pourquoi un mot de passe issu d'une fuite ancienne reste-t-il dangereux ?",
-            choix: [
-              "Parce qu'il est souvent réutilisé sur d'autres services",
-              "Parce qu'il permet de déchiffrer les sauvegardes",
-              "Parce qu'il révèle l'adresse IP de la victime",
-              "Parce qu'il contourne l'authentification multifacteur"
-            ],
-            reponse: 0,
-            explication: "La réutilisation transforme une vieille brèche en accès neuf ailleurs."
-          },
-          {
-            enonce: "Pourquoi une connexion avec des identifiants valides est-elle difficile à détecter ?",
-            choix: [
-              "Elle ne se distingue pas d'une connexion légitime",
-              "Elle n'apparaît dans aucun journal",
-              "Elle chiffre le trafic réseau",
-              "Elle désactive l'antivirus"
-            ],
-            reponse: 0,
-            explication: "Aucun exploit, aucune anomalie technique : juste une authentification réussie."
-          },
-          {
-            enonce: "Quelle mesure protège le mieux contre l'exploitation d'un mot de passe fuité ?",
-            choix: [
-              "Un mot de passe unique par service, couplé à l'authentification multifacteur",
-              "Changer son adresse de courriel",
-              "Supprimer les métadonnées de ses photos",
-              "Utiliser un navigateur en navigation privée"
-            ],
-            reponse: 0,
-            explication: "L'unicité casse la réutilisation ; le second facteur rend le mot de passe seul insuffisant."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-reseaux-sociaux",
-        titre: "Réseaux sociaux et LinkedIn",
-        description: "Ce que les employés publient sans y penser.",
-        cours: [
-          "Les réseaux sociaux livrent, sur les employés :",
-          [
-            "leurs **intérêts personnels et loisirs**,",
-            "leurs **connexions et relations professionnelles**,",
-            "leurs **agendas et événements**."
-          ],
-          "Et, sur l'organisation elle-même : sa **structure organisationnelle** et les **technologies et systèmes utilisés**.",
-          { titre: "Le cas LinkedIn" },
-          "Plus d'un **milliard** d'utilisateurs, une plateforme **axée sur le recrutement**, donc des profils très détaillés. On y identifie :",
-          [
-            "les **employés clés**,",
-            "la **structure organisationnelle**,",
-            "le **matériel et les logiciels utilisés**,",
-            "les **systèmes ICS/OT**,",
-            "les **projets en cours**."
-          ],
-          "Une offre d'emploi est une mine : exiger « 3 ans d'expérience sur tel EDR et telle version d'hyperviseur » revient à publier l'inventaire technique de l'entreprise."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Pourquoi LinkedIn est-il particulièrement riche pour l'OSINT ?",
-            choix: [
-              "Son orientation recrutement pousse les profils à être très détaillés",
-              "Il conserve les données EXIF des photos",
-              "Il publie les adresses de courriel en clair",
-              "Il expose les ports ouverts des entreprises"
-            ],
-            reponse: 0,
-            explication: "Pour être recruté, on détaille son poste, ses outils et ses projets."
-          },
-          {
-            enonce: "Qu'un profil LinkedIn permet-il d'identifier ?",
-            choix: [
-              "Les employés clés et la structure organisationnelle",
-              "Le matériel et les logiciels utilisés",
-              "Les projets en cours",
-              "Les mots de passe du domaine"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Employés clés, organigramme, matériel et logiciels, systèmes ICS/OT et projets en cours."
-          },
-          {
-            enonce: "En quoi une offre d'emploi technique est-elle une source d'OSINT ?",
-            choix: [
-              "Les compétences exigées révèlent les technologies déployées",
-              "Elle contient l'adresse IP publique de l'entreprise",
-              "Elle donne accès à l'intranet",
-              "Elle liste les vulnérabilités connues du système"
-            ],
-            reponse: 0,
-            explication: "La liste des outils demandés est l'inventaire technique de la maison."
-          },
-          {
-            enonce: "Que révèlent les intérêts personnels d'un employé pour un attaquant ?",
-            choix: [
-              "Un prétexte crédible pour un message d'hameçonnage ciblé",
-              "Ses droits d'accès sur le domaine",
-              "Son mot de passe de session",
-              "La topologie du réseau interne"
-            ],
-            reponse: 0,
-            explication: "Un centre d'intérêt partagé rend le message plausible : c'est la matière du spear-phishing."
-          },
-          {
-            enonce: "Pourquoi les systèmes ICS/OT mentionnés sur un profil sont-ils sensibles ?",
-            choix: [
-              "Ils désignent des équipements industriels dont la compromission a un impact physique",
-              "Ils contiennent les sauvegardes de l'entreprise",
-              "Ils hébergent les comptes de messagerie",
-              "Ils identifient le fournisseur d'accès"
-            ],
-            reponse: 0,
-            explication: "ICS/OT = systèmes de contrôle industriel : une cible à l'impact très différent de la bureautique."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-sites-web",
-        titre: "Analyser un site web",
-        description: "WHOIS, DNS, crawlers, miroirs, archives et fichiers oubliés.",
-        cours: [
-          "Un site web se prête à une reconnaissance méthodique :",
-          {
-            entetes: ["Piste", "Moyen"],
-            lignes: [
-              ["Propriétaire du domaine", "Annuaire **WHOIS**"],
-              ["Enregistrements DNS", "`nslookup`, `dig`"],
-              ["Analyse réseau", "`nmap`, `traceroute`, `ping` — **actif**"],
-              ["Moissonner le contenu", "Un **crawler** : `cewl` en ligne de commande, **ZAP** en graphique"],
-              ["Analyser hors ligne", "Miroir du site avec **HTTrack**"],
-              ["Anciennes versions", "**Wayback Machine**"],
-              ["Code source", "**GitHub** et les autres forges"]
-            ]
-          },
-          "Il faut chercher aussi les **dossiers et fichiers sensibles laissés accessibles** par le serveur HTTP : répertoire **`/.git`**, fichiers de configuration, fichiers d'environnement, mots de passe.",
-          "Reconstituer la **topologie du réseau** permet de pousser l'investigation au maximum."
-        ],
-        exemple: {
-          titre: "Exemple",
-          legende: "Reconnaissance d'un domaine",
-          code: "whois exemple.fr\ndig exemple.fr MX\nnslookup -type=TXT exemple.fr\ncewl https://exemple.fr -d 2 -w mots.txt\nhttrack https://exemple.fr -O ./miroir"
-        },
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Que permet de consulter l'annuaire WHOIS ?",
-            choix: [
-              "Les informations d'enregistrement d'un nom de domaine",
-              "Le contenu des pages archivées d'un site",
-              "Les ports ouverts d'un serveur",
-              "Les métadonnées des images d'un site"
-            ],
-            reponse: 0,
-            explication: "WHOIS donne le déclarant, les dates et les contacts d'un domaine."
-          },
-          {
-            enonce: "À quoi sert un crawler comme cewl ?",
-            choix: [
-              "Parcourir un site pour en extraire du contenu, par exemple une liste de mots",
-              "Cartographier les ports d'un réseau",
-              "Simuler un appel téléphonique",
-              "Lire les données EXIF"
-            ],
-            reponse: 0,
-            explication: "`cewl` moissonne le site et en tire un dictionnaire de mots propres à la cible."
-          },
-          {
-            enonce: "Quel outil copie un site web en local pour l'analyser hors ligne ?",
-            choix: ["HTTrack", "exiftool", "theHarvester", "Maltego"],
-            reponse: 0,
-            explication: "HTTrack fait un miroir complet du site."
-          },
-          {
-            enonce: "Pourquoi un répertoire /.git accessible en HTTP est-il critique ?",
-            choix: [
-              "Il expose tout l'historique du code source, y compris les secrets supprimés depuis",
-              "Il permet de modifier le site à distance",
-              "Il donne un accès SSH au serveur",
-              "Il révèle les mots de passe des visiteurs"
-            ],
-            reponse: 0,
-            explication: "L'historique Git conserve les versions antérieures : un secret « retiré » y figure encore."
-          },
-          {
-            enonce: "À quoi sert la Wayback Machine dans une recherche OSINT ?",
-            choix: [
-              "Consulter d'anciennes versions d'un site, y compris des pages retirées depuis",
-              "Balayer les ports d'un hôte",
-              "Vérifier la validité d'une adresse de courriel",
-              "Détecter les macros dans un document"
-            ],
-            reponse: 0,
-            explication: "Ce qui a été publié puis supprimé reste souvent consultable dans les instantanés."
-          },
-          {
-            enonce: "Parmi ces actions sur un site cible, laquelle est de la reconnaissance ACTIVE ?",
-            choix: [
-              "Lancer nmap sur le serveur",
-              "Consulter la Wayback Machine",
-              "Interroger le WHOIS du domaine",
-              "Lire le dépôt GitHub public du projet"
-            ],
-            reponse: 0,
-            explication: "`nmap` interroge directement la machine de la cible ; les trois autres passent par des tiers."
-          }
-        ]
-      }
-
-    ]
-  });
-
-  /* =========================================================
-     CHAPITRE 4 — L'ingénierie sociale
-     ========================================================= */
-
-  cours.chapitres.push({
-    id: "ch4",
-    titre: "Chapitre 4 — L'ingénierie sociale",
-    description: "Exploiter la faille humaine : courriel, téléphone, et le reste.",
-    exercices: [
-
-      {
-        type: "qcm",
-        id: "osint-ingenierie-principe",
-        titre: "La faille humaine",
-        description: "Ce qu'est l'ingénierie sociale, et quand on y recourt.",
-        cours: [
-          { titre: "Quoi ?" },
-          "L'ingénierie sociale exploite la **faille humaine** de la sécurité informatique. C'est la **vulnérabilité la plus importante d'une organisation**, car elle permet de **contourner** les systèmes de sécurité mis en place plutôt que de les affronter.",
-          "Elle prend des formes variées : hameçonnage par courriel, appels téléphoniques, SMS frauduleux, écoute aux portes, espionnage.",
-          { titre: "Pourquoi ?" },
-          "On y recourt dans deux cas :",
-          [
-            "**Manque d'information publique** sur la cible — l'OSINT n'a pas suffi.",
-            "**Informations suffisantes, mais système trop complexe à exploiter** — l'attaque technique coûterait trop cher."
-          ],
-          "L'ingénierie sociale est donc la suite logique de l'OSINT : plus la reconnaissance a été fine, plus le prétexte sera crédible."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quelle vulnérabilité l'ingénierie sociale exploite-t-elle ?",
-            choix: [
-              "La faille humaine",
-              "Une mauvaise configuration du pare-feu",
-              "Une vulnérabilité zero-day",
-              "Un défaut de chiffrement"
-            ],
-            reponse: 0,
-            explication: "C'est la vulnérabilité la plus importante d'une organisation."
-          },
-          {
-            enonce: "Pourquoi la faille humaine est-elle si dangereuse ?",
-            choix: [
-              "Elle permet de contourner les systèmes de sécurité mis en place",
-              "Elle donne directement les droits administrateur",
-              "Elle est indétectable par définition",
-              "Elle ne laisse jamais de trace"
-            ],
-            reponse: 0,
-            explication: "Les défenses techniques restent intactes : l'attaquant passe à côté."
-          },
-          {
-            enonce: "Dans quels cas recourt-on à l'ingénierie sociale ?",
-            choix: [
-              "Quand l'information publique sur la cible manque",
-              "Quand le système est trop complexe à exploiter techniquement",
-              "Quand l'information est suffisante mais l'attaque directe trop coûteuse",
-              "Quand la cible n'a pas de site web"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Manque d'information, ou système trop coûteux à attaquer frontalement."
-          },
-          {
-            enonce: "Quel lien unit l'OSINT et l'ingénierie sociale ?",
-            choix: [
-              "La qualité de la reconnaissance détermine la crédibilité du prétexte",
-              "L'ingénierie sociale remplace l'OSINT quand celui-ci échoue",
-              "Ce sont deux phases distinctes sans rapport",
-              "L'OSINT sert uniquement à choisir l'heure de l'appel"
-            ],
-            reponse: 0,
-            explication: "On ne peut se faire passer pour un interlocuteur légitime qu'avec du contexte."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-hameconnage",
-        titre: "Hameçonnage par courriel",
-        description: "Objectifs, variantes et crédibilité.",
-        cours: [
-          "L'hameçonnage par courriel poursuit plusieurs objectifs :",
-          [
-            "**mettre la cible en confiance**,",
-            "**exfiltrer des informations sensibles**,",
-            "**connaître la hiérarchie** de l'entreprise,",
-            "**infecter les systèmes** directement par l'interne."
-          ],
-          { titre: "Trois façons de viser" },
-          [
-            "**Hameçonnage ciblé** : on réutilise les données trouvées pendant les recherches OSINT sur la cible.",
-            "**Hameçonnage de cibles prioritaires** (whales) : on vise directement les hauts cadres, qui ont accès à l'information la plus pertinente.",
-            "**Hameçonnage sur le bas de la chaîne** : on vise les employés du bas de l'échelle, plus enclins à coopérer et moins méfiants."
-          ],
-          "Le courriel contourne les horaires d'ouverture et l'indisponibilité de la cible, mais il faut **le plus d'information possible pour sembler légitime** : pas de courriel à minuit pour une entreprise de bureau standard."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quels objectifs peut poursuivre un courriel d'hameçonnage ?",
-            choix: [
-              "Mettre la cible en confiance",
-              "Exfiltrer des informations sensibles",
-              "Connaître la hiérarchie de l'entreprise",
-              "Modifier les règles du pare-feu"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Confiance, exfiltration, hiérarchie et infection par l'interne."
-          },
-          {
-            enonce: "Qui vise l'hameçonnage de cibles prioritaires, dit « whaling » ?",
-            choix: [
-              "Les hauts cadres, qui ont accès à l'information la plus pertinente",
-              "Les stagiaires et nouveaux arrivants",
-              "Les administrateurs systèmes uniquement",
-              "Les clients de l'entreprise"
-            ],
-            reponse: 0,
-            explication: "Les « baleines » sont les dirigeants."
-          },
-          {
-            enonce: "Pourquoi viser les employés du bas de l'échelle ?",
-            choix: [
-              "Ils sont plus enclins à coopérer et se méfient moins",
-              "Ils ont tous les droits administrateur",
-              "Leurs adresses sont les seules publiques",
-              "Ils ne sont jamais formés au chiffrement"
-            ],
-            reponse: 0,
-            explication: "Moins de méfiance, plus de coopération : le point d'entrée est plus facile."
-          },
-          {
-            enonce: "Pourquoi l'heure d'envoi d'un courriel d'hameçonnage compte-t-elle ?",
-            choix: [
-              "Un message envoyé à une heure incohérente avec l'activité de l'entreprise éveille les soupçons",
-              "Les serveurs de messagerie bloquent les envois nocturnes",
-              "Les filtres anti-spam sont plus stricts la nuit",
-              "Les métadonnées du message changent selon l'heure"
-            ],
-            reponse: 0,
-            explication: "Pas de courriel à minuit pour une entreprise de bureau standard : le détail trahit la mise en scène."
-          },
-          {
-            enonce: "Quel avantage le courriel offre-t-il par rapport à un appel ?",
-            choix: [
-              "Il contourne les horaires d'ouverture et l'indisponibilité de la cible",
-              "Il ne laisse aucune trace",
-              "Il ne nécessite aucune information préalable",
-              "Il contourne l'authentification multifacteur"
-            ],
-            reponse: 0,
-            explication: "Le message attend son destinataire ; l'appel exige qu'il décroche."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-analyse-courriel",
-        titre: "Analyser un courriel suspect",
-        description: "Les indices d'un cas réel : en-têtes, domaine et scénario.",
-        cours: [
-          "Un courriel d'hameçonnage se démonte en regardant **les en-têtes et le lien**, jamais le seul habillage visuel.",
-          [
-            "**Domaine de l'expéditeur** : une prétendue équipe interne qui écrit depuis une messagerie grand public au lieu du domaine de l'entreprise.",
-            "**Domaine du lien** : le lien de « réinitialisation » pointe vers un domaine sans rapport avec la société.",
-            "**Incohérences d'identité** : l'adresse de l'en-tête `From` et celle de la signature ne sont pas les mêmes.",
-            "**Le scénario** : urgence, compte suspendu, mot de passe « retrouvé sur des forums », action immédiate demandée.",
-            "**Formule d'appel générique** alors que l'expéditeur est censé connaître le destinataire."
-          ],
-          { titre: "Le piège du « SPF : pass »" },
-          "SPF, DKIM et DMARC valident que le message vient bien du domaine **qu'il déclare**. Ils ne disent **rien** de la légitimité de l'expéditeur : un compte gratuit tout neuf passe ces contrôles sans problème.",
-          "À l'autre bout du lien, la page de « réinitialisation » n'est souvent qu'un formulaire qui écrit l'ancien et le nouveau mot de passe dans un fichier texte, avant d'afficher un message rassurant."
-        ],
-        exemple: {
-          titre: "Exemple",
-          legende: "En-tetes du courriel etudie",
-          code: "From: Steel Door Data Protection - Cloud Security <sddp.cloudsec@proton.me>\nTo: marianne.haut-nimes@steeldoordataprotection.net\nSubject: [SECURITY] Account suspended - Password reset needed\nReceived-SPF: Pass ... envelope-from=<sddp.cloudsec@proton.me>\ndkim=pass header.d=proton.me\n\n  \"...please use the secured form here: https://pwreset.vilinter.net\"\n  signature : sddp.cloudteam@proton.me"
-        },
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "L'en-tête indique `spf=pass` et `dkim=pass`. Que peut-on en conclure ?",
-            choix: [
-              "Que le message vient bien du domaine qu'il déclare, sans rien dire de sa légitimité",
-              "Que le message est authentique et digne de confiance",
-              "Que le message a été envoyé par l'entreprise citée",
-              "Que la pièce jointe est saine"
-            ],
-            reponse: 0,
-            explication: "SPF et DKIM authentifient le domaine expéditeur — ici celui de la messagerie grand public, pas celui de l'entreprise usurpée."
-          },
-          {
-            enonce: "L'équipe « Cloud Security » de steeldoordataprotection.net écrit depuis sddp.cloudsec@proton.me. Qu'en pensez-vous ?",
-            choix: [
-              "C'est un signal fort : une équipe interne écrirait depuis le domaine de l'entreprise",
-              "C'est normal, cette messagerie est chiffrée",
-              "C'est normal pour une alerte de sécurité",
-              "Cela prouve seulement que le message vient de l'étranger"
-            ],
-            reponse: 0,
-            explication: "Le domaine de l'expéditeur ne correspond pas à l'organisation dont il se réclame."
-          },
-          {
-            enonce: "Le message renvoie vers https://pwreset.vilinter.net. Quel est le problème ?",
-            choix: [
-              "Le domaine du lien n'a aucun rapport avec celui de l'entreprise",
-              "Le lien utilise HTTPS, donc il est chiffré",
-              "Le lien contient le mot « reset »",
-              "Le lien est trop court pour être légitime"
-            ],
-            reponse: 0,
-            explication: "Un lien légitime resterait sur le domaine de la société ; HTTPS ne garantit que le transport."
-          },
-          {
-            enonce: "Quels éléments du scénario doivent alerter ?",
-            choix: [
-              "Le compte est suspendu et une action immédiate est demandée",
-              "Le mot de passe aurait « fuité sur des forums de pirates »",
-              "L'appel est générique alors que l'expéditeur devrait connaître le destinataire",
-              "Le message comporte une signature d'équipe"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Urgence, prétexte alarmant et formule impersonnelle. Une signature d'équipe, elle, est banale."
-          },
-          {
-            enonce: "Que fait typiquement la page derrière un tel lien ?",
-            choix: [
-              "Elle enregistre l'ancien et le nouveau mot de passe, puis affiche un message rassurant",
-              "Elle installe automatiquement un rootkit noyau",
-              "Elle chiffre le disque du visiteur",
-              "Elle scanne le réseau local de la victime"
-            ],
-            reponse: 0,
-            explication: "Un simple formulaire écrit les identifiants dans un fichier, puis confirme un changement qui n'a pas eu lieu."
-          },
-          {
-            enonce: "L'adresse de l'en-tête From et celle de la signature diffèrent (cloudsec / cloudteam). Comment le lire ?",
-            choix: [
-              "Une incohérence d'identité typique d'un message forgé à la va-vite",
-              "Une pratique normale des services de sécurité",
-              "Une conséquence du relais SMTP",
-              "Une conséquence de la signature DKIM"
-            ],
-            reponse: 0,
-            explication: "Un service réel signe avec l'adresse qui envoie ; la divergence trahit le montage."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-telephone",
-        titre: "Ingénierie sociale par téléphone",
-        description: "Usurpation du numéro, vérification d'identité et clonage de voix.",
-        cours: [
-          "L'appel est parfois **plus efficace** qu'un simple courriel : il met la pression du direct et permet de rebondir sur les réponses.",
-          [
-            "Il permet de viser des cibles **mieux protégées** : banques, écoles, administrations.",
-            "Combiné aux informations trouvées en OSINT, il permet de **se faire passer pour quelqu'un d'autre**, y compris face à une vérification d'identité (date de naissance, adresse, dernier paiement).",
-            "Avec l'**IA**, on peut **simuler la voix** d'un tiers, ce qui augmente encore les chances de réussite."
-          ],
-          { titre: "Les centres d'appels" },
-          "Ce sont les **cibles prioritaires**. Selon l'entreprise, on tente d'y :",
-          [
-            "**réinitialiser le mot de passe** d'un compte,",
-            "**obtenir des informations** sur l'entreprise ou ses employés,",
-            "**modifier un compte** (adresse de courriel, adresse postale…),",
-            "**effectuer des actions non autorisées**, comme retirer de l'argent."
-          ],
-          "On peut aussi appeler un employé **en se faisant passer pour l'entreprise elle-même**. Dans tous les cas, l'essentiel est d'**usurper le numéro appelant**."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quelle précaution technique est présentée comme essentielle lors d'un appel malveillant ?",
-            choix: [
-              "Usurper le numéro appelant",
-              "Passer par un VPN",
-              "Appeler depuis une cabine",
-              "Chiffrer la communication"
-            ],
-            reponse: 0,
-            explication: "Un numéro affiché cohérent rend l'appel crédible dès la première seconde."
-          },
-          {
-            enonce: "Quelles cibles sont prioritaires pour l'ingénierie sociale par téléphone ?",
-            choix: ["Les centres d'appels", "Les services juridiques", "Les équipes de développement", "Les prestataires de ménage"],
-            reponse: 0,
-            explication: "Les centres d'appels manipulent des comptes toute la journée, avec des procédures standardisées."
-          },
-          {
-            enonce: "Que change l'IA dans l'ingénierie sociale par téléphone ?",
-            choix: [
-              "Elle permet de simuler la voix d'une autre personne",
-              "Elle déchiffre les échanges protégés",
-              "Elle contourne l'usurpation de numéro",
-              "Elle génère les mots de passe de la cible"
-            ],
-            reponse: 0,
-            explication: "Le clonage vocal rend l'usurpation d'identité bien plus convaincante."
-          },
-          {
-            enonce: "Pourquoi une vérification d'identité au téléphone ne suffit-elle pas toujours ?",
-            choix: [
-              "Les éléments demandés sont souvent trouvables en OSINT",
-              "Les opérateurs ne la pratiquent jamais",
-              "Elle est interdite par la réglementation",
-              "Elle ne fonctionne que sur les lignes fixes"
-            ],
-            reponse: 0,
-            explication: "Date de naissance, adresse, nom de l'employeur : autant de données publiques ou fuitées."
-          },
-          {
-            enonce: "Quelles actions un attaquant cherche-t-il à obtenir d'un centre d'appels ?",
-            choix: [
-              "La réinitialisation du mot de passe d'un compte",
-              "La modification de l'adresse de courriel associée à un compte",
-              "Des informations sur l'entreprise ou ses employés",
-              "L'installation d'un web shell sur le serveur"
-            ],
-            reponse: [0, 1, 2],
-            explication: "Le web shell relève de la phase d'installation, pas d'un échange téléphonique."
-          }
-        ]
-      },
-
-      {
-        type: "qcm",
-        id: "osint-autres-methodes",
-        titre: "Les autres méthodes",
-        description: "SMS, sites frauduleux, présentiel, écoute et espionnage d'écran.",
-        cours: [
-          "Au-delà du courriel et du téléphone, l'ingénierie sociale emprunte d'autres chemins :",
-          [
-            "**SMS frauduleux** — le message court, sans en-têtes à examiner ni survol de lien possible.",
-            "**Sites web frauduleux** — une copie d'un portail légitime, vers laquelle on dirige la victime.",
-            "**Visite en présentiel aux bureaux** — la plus **risquée** pour l'attaquant, mais la plus directe.",
-            "**Écoute aux portes** — surprendre une conversation dans un couloir, un train, une cafétéria.",
-            "**Espionnage d'écran** — lire par-dessus l'épaule, dans un espace ouvert ou un lieu public."
-          ],
-          "Ces méthodes n'ont aucune parade technique : seules la vigilance et les procédures les arrêtent."
-        ],
-        melangerChoix: true,
-        questions: [
-          {
-            enonce: "Quelle méthode d'ingénierie sociale est présentée comme la plus risquée pour l'attaquant ?",
-            choix: [
-              "La visite en présentiel aux bureaux",
-              "Le SMS frauduleux",
-              "L'écoute aux portes",
-              "Le site web frauduleux"
-            ],
-            reponse: 0,
-            explication: "Être physiquement sur place expose à l'identification et à l'interpellation."
-          },
-          {
-            enonce: "Pourquoi un SMS frauduleux est-il difficile à vérifier pour la victime ?",
-            choix: [
-              "Le message est court, sans en-têtes à examiner et sans survol de lien possible",
-              "Les SMS ne peuvent pas contenir de lien",
-              "Les opérateurs chiffrent les SMS",
-              "Les SMS ne sont pas journalisés"
-            ],
-            reponse: 0,
-            explication: "Aucun en-tête, pas d'aperçu de l'URL : les réflexes du courriel ne s'appliquent plus."
-          },
-          {
-            enonce: "Qu'est-ce que l'espionnage d'écran ?",
-            choix: [
-              "Lire l'écran d'une personne par-dessus son épaule, dans un lieu partagé",
-              "Capturer l'affichage à distance par un malware",
-              "Intercepter le signal vidéo d'un vidéoprojecteur",
-              "Photographier un écran pour en lire les métadonnées"
-            ],
-            reponse: 0,
-            explication: "Aucune technique : la présence physique suffit."
-          },
-          {
-            enonce: "Qu'est-ce qui protège le mieux contre l'écoute aux portes et l'espionnage d'écran ?",
-            choix: [
-              "La vigilance des personnes et les procédures internes",
-              "Un pare-feu applicatif",
-              "Le chiffrement du disque",
-              "L'authentification multifacteur"
-            ],
-            reponse: 0,
-            explication: "Ces attaques passent hors du système d'information : aucune parade technique ne les atteint."
-          }
-        ]
-      }
-
-    ]
-  });
-
-  /* =========================================================
-     CHAPITRE 5 — Quizz final : 20 questions tirées sur 50
-     ========================================================= */
-
-  const banqueFinale = [
-    {
-      enonce: "Dans le vocabulaire du renseignement, « intelligence » se traduit par :",
-      choix: ["Renseignement", "Analyse", "Investigation", "Perspicacité"],
-      reponse: 0,
-      explication: "Intelligence = renseignement."
-    },
-    {
-      enonce: "Un analyste exploite des photographies satellite. De quelle discipline s'agit-il ?",
-      choix: ["IMINT", "SIGINT", "HUMINT", "OSINT"],
-      reponse: 0,
-      explication: "IMINT : renseignement d'origine image."
-    },
-    {
-      enonce: "Un agent obtient une information d'un contact interne. De quelle discipline s'agit-il ?",
-      choix: ["HUMINT", "OSINT", "SIGINT", "IMINT"],
-      reponse: 0,
-      explication: "HUMINT : la source est humaine."
-    },
-    {
-      enonce: "La question « la source a-t-elle délivré l'information de son plein gré ? » sert à distinguer :",
-      choix: [
-        "Une information ouverte d'une information fermée",
-        "Une information blanche d'une information grise",
-        "L'OSINT du SIGINT",
-        "La reconnaissance passive de la reconnaissance active"
-      ],
-      reponse: 0,
-      explication: "Plein gré → ouverte ; sinon → fermée."
-    },
-    {
-      enonce: "Les sources ouvertes représentent environ quelle part de l'information disponible ?",
-      choix: ["70 %", "30 %", "95 %", "50 %"],
-      reponse: 0,
-      explication: "70 % pour les sources ouvertes, 30 % pour les fermées."
-    },
-    {
-      enonce: "Une base de données accessible seulement après un accord de confidentialité est :",
-      choix: ["Une source fermée mais licite", "Une source ouverte", "De l'information blanche", "Du SIGINT"],
-      reponse: 0,
-      explication: "Accès protégé, donc source fermée — ce qui n'en fait pas une source illégale."
-    },
-    {
-      enonce: "L'information blanche représente environ :",
-      choix: ["95 % des informations", "70 % des informations", "30 % des informations", "5 % des informations"],
-      reponse: 0,
-      explication: "Le blanc domine largement : environ 95 %."
-    },
-    {
-      enonce: "Une donnée publique mais introuvable sans connaître le bon registre est plutôt :",
-      choix: ["De l'information grise", "De l'information blanche", "De l'information noire", "Du HUMINT"],
-      reponse: 0,
-      explication: "Licite mais difficile d'accès ou d'existence méconnue : c'est le gris."
-    },
-    {
-      enonce: "Quel usage de l'OSINT est de nature défensive ?",
-      choix: [
-        "Vérifier l'exposition de ses propres informations",
-        "Préparer un courriel de spear-phishing",
-        "Choisir la charge utile à livrer",
-        "Établir un canal C2"
-      ],
-      reponse: 0,
-      explication: "Mesurer sa propre exposition, c'est faire de l'OSINT sur soi-même."
-    },
-    {
-      enonce: "Dans quel ordre se suivent ces phases de la Kill Chain ?",
-      choix: [
-        "Reconnaissance, armement, livraison, exploitation",
-        "Reconnaissance, livraison, armement, exploitation",
-        "Armement, reconnaissance, exploitation, livraison",
-        "Livraison, reconnaissance, armement, exploitation"
-      ],
-      reponse: 0,
-      explication: "Phases 1 à 4 dans cet ordre exact."
-    },
-    {
-      enonce: "Quelle phase se situe entre l'exploitation et le commandement & contrôle ?",
-      choix: ["L'installation", "La livraison", "L'armement", "Les actions sur les objectifs"],
-      reponse: 0,
-      explication: "Exploitation → Installation → C2."
-    },
-    {
-      enonce: "Consulter les profils LinkedIn des employés d'une cible, c'est :",
-      choix: [
-        "De la reconnaissance passive",
-        "De la reconnaissance active",
-        "De la livraison",
-        "De l'exploitation"
-      ],
-      reponse: 0,
-      explication: "Aucune interaction avec les systèmes de la cible."
-    },
-    {
-      enonce: "Pourquoi un attaquant préfère-t-il épuiser la reconnaissance passive avant de scanner ?",
-      choix: [
-        "Le scan apparaît dans les journaux de la cible et peut déclencher une alerte",
-        "Le scan est plus lent que la recherche web",
-        "Le scan ne donne aucune information utile",
-        "Le scan est interdit par les moteurs de recherche"
-      ],
-      reponse: 0,
-      explication: "Le passif est invisible côté cible ; l'actif se voit."
-    },
-    {
-      enonce: "Un attaquant achète une charge utile éprouvée sur un marché clandestin. Quelle phase ?",
-      choix: ["Armement", "Livraison", "Reconnaissance", "Installation"],
-      reponse: 0,
-      explication: "Acquérir l'arme relève de la phase 2."
-    },
-    {
-      enonce: "Une clé USB au logo de l'entreprise est déposée dans le hall d'accueil. Quelle phase ?",
-      choix: ["Livraison", "Armement", "Exploitation", "Reconnaissance"],
-      reponse: 0,
-      explication: "Le baiting est un moyen d'acheminer la charge utile."
-    },
-    {
-      enonce: "Un fournisseur habituel de la cible voit son site compromis pour piéger les visiteurs. Comment nomme-t-on cela ?",
-      choix: ["Une attaque watering-hole", "Un spear-phishing", "Un credential stuffing", "Un DNS tunneling"],
-      reponse: 0,
-      explication: "On empoisonne le point d'eau fréquenté par la cible."
-    },
-    {
-      enonce: "Une tâche planifiée nommée « Windows Update » relance l'implant à chaque démarrage. Quelle phase ?",
-      choix: ["Installation", "Commandement & contrôle", "Exploitation", "Actions sur les objectifs"],
-      reponse: 0,
-      explication: "C'est une technique de persistance."
-    },
-    {
-      enonce: "Un implant envoie toutes les heures une requête HTTPS vers un domaine contrôlé par l'attaquant. Quelle phase ?",
-      choix: ["Commandement & contrôle", "Installation", "Livraison", "Armement"],
-      reponse: 0,
-      explication: "Des beacons réguliers : c'est le canal C2."
-    },
-    {
-      enonce: "Les Shadow Copies et les sauvegardes locales sont effacées avant un chiffrement massif. Quelle phase ?",
-      choix: ["Actions sur les objectifs", "Installation", "Exploitation", "Commandement & contrôle"],
-      reponse: 0,
-      explication: "Maximiser l'impact en empêchant toute restauration."
-    },
-    {
-      enonce: "Le timestomping consiste à :",
-      choix: [
-        "Modifier les horodatages des fichiers pour brouiller l'analyse",
-        "Retarder l'exécution du malware",
-        "Synchroniser l'implant avec le serveur C2",
-        "Horodater légalement une preuve"
-      ],
-      reponse: 0,
-      explication: "L'attaquant fausse la chronologie pour compliquer l'investigation."
-    },
-    {
-      enonce: "Vous voulez lister les PDF publiés sur exemple.fr. Quelle requête ?",
-      choix: [
-        "site:exemple.fr filetype:pdf",
-        "inurl:exemple.fr pdf",
-        "intitle:pdf exemple.fr",
-        "filetype:exemple.fr pdf"
-      ],
-      reponse: 0,
-      explication: "`site:` restreint le domaine, `filetype:` le format."
-    },
-    {
-      enonce: "La Google Hacking Database est hébergée par :",
-      choix: ["exploit-db", "Have I Been Pwned", "GitHub", "OpenStreetMap"],
-      reponse: 0,
-      explication: "La GHDB est le catalogue de dorks d'exploit-db."
-    },
-    {
-      enonce: "Vous cherchez des caméras et serveurs exposés sur Internet, avec leurs versions. Quel type d'outil ?",
-      choix: [
-        "Un moteur de recherche fondé sur le balayage de ports",
-        "Un crawler de site web",
-        "Un annuaire WHOIS",
-        "Un moteur de recherche inversée d'images"
-      ],
-      reponse: 0,
-      explication: "Ces moteurs indexent des machines et des bannières de service, pas des pages."
-    },
-    {
-      enonce: "Vous disposez d'une photo de profil et voulez retrouver les autres comptes de la personne. Que faites-vous ?",
-      choix: [
-        "Une recherche inversée d'image, complétée si besoin par de la reconnaissance faciale",
-        "Une lecture des EXIF du fichier",
-        "Un balayage de ports",
-        "Une interrogation WHOIS"
-      ],
-      reponse: 0,
-      explication: "Une photo de profil identique relie des comptes sans autre lien apparent."
-    },
-    {
-      enonce: "En quoi la reconnaissance faciale dépasse-t-elle la recherche inversée ?",
-      choix: [
-        "Elle retrouve d'autres photos du même visage, pas seulement la même image",
-        "Elle lit les coordonnées GPS de l'image",
-        "Elle fonctionne sans connexion Internet",
-        "Elle identifie le modèle de l'appareil photo"
-      ],
-      reponse: 0,
-      explication: "Elle compare des visages, ce qui élargit considérablement la recherche."
-    },
-    {
-      enonce: "Quel outil lit et efface les métadonnées d'une image ?",
-      choix: ["exiftool", "cewl", "HTTrack", "theHarvester"],
-      reponse: 0,
-      explication: "`exiftool` est l'outil de référence sur les métadonnées."
-    },
-    {
-      enonce: "Une photo téléchargée depuis un réseau social traditionnel contient rarement ses EXIF parce que :",
-      choix: [
-        "La plateforme les supprime à la publication",
-        "Les appareils modernes n'en écrivent plus",
-        "Le format JPEG ne les supporte pas",
-        "Le navigateur les efface à l'affichage"
-      ],
-      reponse: 0,
-      explication: "Les réseaux les conservaient autrefois ; ils les retirent désormais."
-    },
-    {
-      enonce: "Une photo sans aucune métadonnée peut-elle être localisée ?",
-      choix: [
-        "Oui, en croisant les éléments visibles avec la cartographie et StreetView",
-        "Non, les EXIF sont indispensables",
-        "Oui, mais seulement si elle a été prise en extérieur de jour",
-        "Non, sauf si la personne publie sa position"
-      ],
-      reponse: 0,
-      explication: "La triangulation visuelle exploite enseignes, bâtiments et mobilier urbain."
-    },
-    {
-      enonce: "Vous connaissez le nom d'un employé et le format des adresses de sa société. Que pouvez-vous faire ?",
-      choix: [
-        "Reconstituer son adresse, puis la vérifier avec un vérificateur de courriels",
-        "Obtenir son mot de passe",
-        "Lire sa boîte de réception",
-        "Consulter ses messages privés"
-      ],
-      reponse: 0,
-      explication: "Format des adresses + annuaire professionnel = l'annuaire complet des adresses."
-    },
-    {
-      enonce: "À quoi sert un service de recherche de pseudonyme comme WhatsMyName ?",
-      choix: [
-        "Tester un même identifiant sur un grand nombre de plateformes",
-        "Vérifier la force d'un mot de passe",
-        "Retrouver le propriétaire d'un domaine",
-        "Archiver un site web"
-      ],
-      reponse: 0,
-      explication: "Il cherche où un pseudonyme donné est déjà enregistré."
-    },
-    {
-      enonce: "theHarvester produit, à partir d'un domaine :",
-      choix: [
-        "Des courriels, sous-domaines, IP, noms et URL",
-        "Des mots de passe en clair",
-        "Des captures d'écran du site",
-        "Des enregistrements DNSSEC"
-      ],
-      reponse: 0,
-      explication: "C'est le rôle du moissonneur."
-    },
-    {
-      enonce: "Dans Maltego, une « Transform » sert à :",
-      choix: [
-        "Découvrir de nouveaux objets liés à un objet du graphe",
-        "Convertir un graphe en rapport PDF",
-        "Anonymiser les requêtes",
-        "Chiffrer les résultats de la collecte"
-      ],
-      reponse: 0,
-      explication: "Chaque Transform étend le graphe à partir d'un objet existant."
-    },
-    {
-      enonce: "Pourquoi la version Community de Maltego convient-elle mal à une grande investigation ?",
-      choix: [
-        "Elle plafonne à une douzaine de résultats par Transform",
-        "Elle interdit l'export du graphe",
-        "Elle ne gère pas les domaines",
-        "Elle expire au bout de sept jours"
-      ],
-      reponse: 0,
-      explication: "La limite de résultats tronque rapidement les graphes."
-    },
-    {
-      enonce: "Quel outil automatise l'OSINT pour cartographier une surface d'attaque ?",
-      choix: ["SpiderFoot", "HTTrack", "exiftool", "cewl"],
-      reponse: 0,
-      explication: "SpiderFoot automatise la collecte et le croisement."
-    },
-    {
-      enonce: "Une adresse figure dans plusieurs fuites indexées par Have I Been Pwned. Quel est le risque immédiat ?",
-      choix: [
-        "Un accès direct au compte si le mot de passe a été réutilisé ailleurs",
-        "Une infection automatique de la machine",
-        "La suppression du compte par le fournisseur",
-        "Une élévation de privilèges sur le domaine"
-      ],
-      reponse: 0,
-      explication: "La réutilisation transforme une vieille brèche en accès valide sur un autre service."
-    },
-    {
-      enonce: "Pourquoi une offre d'emploi très technique intéresse-t-elle un attaquant ?",
-      choix: [
-        "Elle révèle les technologies et versions déployées dans l'entreprise",
-        "Elle contient les identifiants du candidat",
-        "Elle donne l'adresse IP publique du siège",
-        "Elle liste les correctifs manquants"
-      ],
-      reponse: 0,
-      explication: "Les compétences exigées dressent l'inventaire technique de la maison."
-    },
-    {
-      enonce: "LinkedIn permet notamment d'identifier :",
-      choix: [
-        "Les employés clés et l'organigramme",
-        "Les systèmes ICS/OT et les projets en cours",
-        "Le matériel et les logiciels utilisés",
-        "Les comptes à privilèges du domaine"
-      ],
-      reponse: [0, 1, 2],
-      explication: "Les comptes à privilèges ne se lisent pas sur un profil public."
-    },
-    {
-      enonce: "Quel annuaire renseigne sur l'enregistrement d'un nom de domaine ?",
-      choix: ["WHOIS", "GHDB", "EXIF", "DKIM"],
-      reponse: 0,
-      explication: "WHOIS donne le déclarant, les dates et les contacts."
-    },
-    {
-      enonce: "Vous voulez consulter une page supprimée du site de la cible. Où regardez-vous ?",
-      choix: [
-        "Dans les instantanés de la Wayback Machine",
-        "Dans le WHOIS du domaine",
-        "Dans les enregistrements DNS",
-        "Dans les EXIF des images du site"
-      ],
-      reponse: 0,
-      explication: "Les archives conservent des versions antérieures du site."
-    },
-    {
-      enonce: "Un répertoire /.git accessible en HTTP expose :",
-      choix: [
-        "L'historique complet du code, y compris des secrets retirés depuis",
-        "Les mots de passe des visiteurs",
-        "Les journaux d'accès du serveur",
-        "La base de données du site"
-      ],
-      reponse: 0,
-      explication: "Git conserve les versions passées : un secret supprimé y reste lisible."
-    },
-    {
-      enonce: "Parmi ces actions, laquelle relève de la reconnaissance ACTIVE ?",
-      choix: [
-        "Un traceroute vers le serveur de la cible",
-        "Une requête WHOIS",
-        "Une recherche sur la Wayback Machine",
-        "La lecture d'un dépôt GitHub public"
-      ],
-      reponse: 0,
-      explication: "Le traceroute émet des paquets vers la cible ; les autres passent par des tiers."
-    },
-    {
-      enonce: "L'ingénierie sociale est utile quand :",
-      choix: [
-        "Le système est trop complexe à exploiter techniquement",
-        "L'information publique sur la cible manque",
-        "Le coût d'une attaque directe est trop élevé",
-        "La cible n'a aucune présence en ligne"
-      ],
-      reponse: [0, 1, 2],
-      explication: "Manque d'information, ou système trop coûteux à attaquer de front."
-    },
-    {
-      enonce: "Un courriel affiche `spf=pass` et `dkim=pass`. Que garantit cela ?",
-      choix: [
-        "Que le message provient bien du domaine qu'il déclare",
-        "Que l'expéditeur est légitime",
-        "Que la pièce jointe est saine",
-        "Que le lien mène à un site de confiance"
-      ],
-      reponse: 0,
-      explication: "L'authentification porte sur le domaine émetteur, pas sur les intentions."
-    },
-    {
-      enonce: "Une alerte de sécurité signée « équipe Cloud » d'une entreprise arrive depuis une messagerie grand public. Que concluez-vous ?",
-      choix: [
-        "Le domaine de l'expéditeur ne correspond pas à l'organisation invoquée : forte présomption d'hameçonnage",
-        "C'est normal pour un message chiffré",
-        "C'est normal pour une alerte urgente",
-        "Cela indique seulement un serveur situé à l'étranger"
-      ],
-      reponse: 0,
-      explication: "Une équipe interne écrit depuis le domaine de l'entreprise."
-    },
-    {
-      enonce: "Quel type d'hameçonnage vise directement les dirigeants ?",
-      choix: [
-        "L'hameçonnage de cibles prioritaires (whaling)",
-        "L'hameçonnage sur le bas de la chaîne",
-        "Le baiting",
-        "Le watering-hole"
-      ],
-      reponse: 0,
-      explication: "Les « baleines » sont les hauts cadres, qui détiennent l'information la plus pertinente."
-    },
-    {
-      enonce: "Pourquoi viser les employés du bas de l'échelle plutôt que les cadres ?",
-      choix: [
-        "Ils se méfient moins et coopèrent plus volontiers",
-        "Ils disposent de plus de droits",
-        "Leurs messages ne sont pas filtrés",
-        "Ils utilisent des mots de passe plus courts"
-      ],
-      reponse: 0,
-      explication: "Moins de méfiance : le point d'entrée est plus facile à obtenir."
-    },
-    {
-      enonce: "Lors d'un appel malveillant, quel élément est présenté comme essentiel ?",
-      choix: [
-        "Usurper le numéro appelant",
-        "Appeler en dehors des heures de bureau",
-        "Masquer son numéro",
-        "Enregistrer la conversation"
-      ],
-      reponse: 0,
-      explication: "Un numéro affiché cohérent installe la crédibilité dès le décroché."
-    },
-    {
-      enonce: "En quoi l'IA renforce-t-elle l'ingénierie sociale téléphonique ?",
-      choix: [
-        "Elle permet de cloner la voix d'une personne connue de la victime",
-        "Elle devine les mots de passe",
-        "Elle usurpe le numéro appelant",
-        "Elle contourne les serveurs vocaux"
-      ],
-      reponse: 0,
-      explication: "La voix familière lève la dernière méfiance de l'interlocuteur."
-    },
-    {
-      enonce: "Quelle méthode d'ingénierie sociale est la plus risquée pour l'attaquant ?",
-      choix: [
-        "La visite en présentiel aux bureaux",
-        "Le SMS frauduleux",
-        "Le site web frauduleux",
-        "L'écoute aux portes"
-      ],
-      reponse: 0,
-      explication: "L'attaquant s'expose physiquement à l'identification."
-    },
-    {
-      enonce: "Contre l'écoute aux portes et l'espionnage d'écran, la parade est :",
-      choix: [
-        "Organisationnelle et comportementale",
-        "Un pare-feu applicatif",
-        "Le chiffrement du disque",
-        "Un antivirus à jour"
-      ],
-      reponse: 0,
-      explication: "Ces attaques se déroulent hors du système d'information."
-    }
+  const PIECES_BRUME = [
+    { texte: COURRIEL_BRUME, nom: "brume.eml" },
+    { image: "assets/osint/brume-photo.jpg", nom: "brume-photo.jpg", legende: "Pièce jointe n° 1" },
+    { fichier: "assets/osint/brume-revendication.pdf", nom: "brume-revendication.pdf", legende: "Pièce jointe n° 2" }
   ];
 
-  cours.chapitres.push({
-    id: "ch5",
-    titre: "Chapitre 5 — Quizz final",
-    description: "Vingt questions tirées au hasard dans une banque de cinquante, sur tout le programme.",
+  /* =========================================================
+     CHAPITRE 2 — Enquêtes sur images
+     ========================================================= */
+
+  const ch2 = {
+    id: "ch2",
+    titre: "Chapitre 2 — Enquêtes sur images",
+    description: "Faire parler un fichier, une photo de rue, une plaque d'immatriculation.",
     exercices: [
+
+      /* ---------------------------------------------------------
+         Enquête 1 — Métadonnées
+         --------------------------------------------------------- */
       {
-        type: "qcm",
-        id: "osint-quizz-final",
-        titre: "Quizz final — OSINT",
-        description: "20 questions tirées parmi 50 : définitions, Kill Chain, outils et ingénierie sociale.",
-        tirage: 20,
-        melangerChoix: true,
-        questions: banqueFinale
+        type: "enquete",
+        id: "osint-enquete-metadonnees",
+        titre: "Enquête 1 — Ce que cache un fichier",
+        description: "EXIF, coordonnées GPS, propriétés des PDF et des documents Office, vignette oubliée.",
+        methodes: [
+          {
+            titre: "Les métadonnées EXIF",
+            texte: [
+              "Un appareil photo ou un smartphone écrit dans chaque JPEG des **données EXIF** :",
+              [
+                "`Make` / `Model` : marque et modèle de l'appareil ;",
+                "`DateTimeOriginal` : date et heure de la prise de vue, en **heure locale**, avec parfois `OffsetTimeOriginal` (le décalage, ex. `+02:00`) ;",
+                "`Artist`, `Copyright` : l'auteur déclaré ;",
+                "`Software` : le logiciel (ou la version du micrologiciel) qui a écrit le fichier ;",
+                "`GPSLatitude`, `GPSLongitude` : la position, si la localisation était active."
+              ],
+              {
+                entetes: ["Outil", "Usage"],
+                lignes: [
+                  ["`exiftool photo.jpg`", "Ligne de commande, lit tout (images, PDF, Office, vidéos)"],
+                  ["Jeffrey's Image Metadata Viewer (exif.regex.info)", "En ligne : on dépose le fichier, il affiche EXIF, carte et vignette"],
+                  ["Windows : clic droit > Propriétés > Détails", "Lecture rapide des champs principaux"]
+                ]
+              }
+            ],
+            exemple: {
+              titre: "Exemple — sortie d'exiftool",
+              texte: [
+                { code: "$ exiftool vacances.jpg\nMake                  : Canon\nCamera Model Name     : Canon EOS 250D\nDate/Time Original    : 2023:07:14 21:03:55\nOffset Time Original  : +02:00\nArtist                : J. Dupont\nGPS Position          : 43 deg 17' 46.80\" N, 5 deg 22' 12.60\" E" },
+                "On lit : photo prise le **14 juillet 2023 à 21 h 03** (heure d'été française), avec un Canon EOS 250D, par « J. Dupont », à une position précise."
+              ]
+            }
+          },
+          {
+            titre: "Des coordonnées GPS à un lieu",
+            texte: [
+              "Les EXIF stockent la position en **degrés, minutes, secondes** (DMS), avec une référence `N`/`S` et `E`/`W`.",
+              "Pour la carte, on convertit en **degrés décimaux** : `décimal = D + M/60 + S/3600`, **négatif** au Sud et à l'Ouest.",
+              "Puis on colle `latitude, longitude` dans Google Maps ou OpenStreetMap : la carte donne la rue, la commune, et souvent une vue au sol.",
+              { remarque: "`exiftool -n -GPSPosition photo.jpg` donne directement les degrés décimaux." }
+            ],
+            exemple: {
+              titre: "Exemple — conversion",
+              texte: [
+                { code: "GPSLatitude  : 48 deg 51' 29.6\"  N   ->  48 + 51/60 + 29.6/3600 =  48.85822\nGPSLongitude :  2 deg 17' 40.2\"  E   ->   2 + 17/60 + 40.2/3600 =   2.29450" },
+                "`48.85822, 2.29450` dans une carte : le Champ-de-Mars, au pied de la tour Eiffel (Paris 7e). Une longitude `W` aurait donné `-2.29450` : en pleine Manche, au nord du cap Fréhel."
+              ]
+            }
+          },
+          {
+            titre: "Les documents aussi",
+            texte: [
+              "Un **PDF** contient un dictionnaire d'informations : `Author` (souvent le nom de la session Windows ou du compte Office), `Creator` (le logiciel d'origine, ex. Word), `Producer` (le moteur qui a fabriqué le PDF), `CreationDate` au format `D:AAAAMMJJhhmmss+01'00'`.",
+              "Un document **Office** (`.docx`, `.xlsx`, `.pptx`) est une **archive ZIP**. Deux fichiers y racontent son histoire :",
+              [
+                "`docProps/core.xml` : `creator`, `lastModifiedBy` (dernier compte qui a enregistré), `revision`, dates de création et de modification ;",
+                "`docProps/app.xml` : `Company` (l'organisation déclarée dans Office), `Template` (le modèle utilisé), `Application`."
+              ],
+              "Lecture : `exiftool`, les propriétés du lecteur PDF (Fichier > Propriétés), ou tout simplement renommer le `.docx` en `.zip` et l'ouvrir."
+            ],
+            exemple: {
+              titre: "Exemple — sous le capot d'un .docx",
+              texte: [
+                { code: "$ unzip -p rapport.docx docProps/core.xml\n<dc:creator>Service communication</dc:creator>\n<cp:lastModifiedBy>m.durand</cp:lastModifiedBy>\n<cp:revision>12</cp:revision>\n\n$ unzip -p rapport.docx docProps/app.xml\n<Template>Modele_Agence_Lumen.dotx</Template>\n<Company>Agence Lumen</Company>" },
+                "Le document se dit « Service communication », mais il a été enregistré en dernier par le compte `m.durand`, sur un poste où Office est enregistré au nom d'**Agence Lumen**, avec le modèle de cette agence : il a été sous-traité."
+              ]
+            }
+          },
+          {
+            titre: "La vignette oubliée",
+            texte: [
+              "Un JPEG peut embarquer une **vignette** (`ThumbnailImage`, quelques centaines de pixels) dans ses EXIF, pour l'aperçu rapide.",
+              "Certains outils de recadrage ou de floutage modifient l'image principale **sans régénérer la vignette** : la miniature montre alors la photo **d'origine**, ce que l'auteur voulait cacher compris.",
+              { code: "exiftool -b -ThumbnailImage photo.jpg > vignette.jpg\nexiftool -b -PreviewImage  photo.jpg > apercu.jpg", legende: "Extraire les images embarquées" },
+              "Jeffrey's Image Metadata Viewer affiche aussi la vignette, s'il y en a une."
+            ],
+            exemple: {
+              titre: "Exemple",
+              texte: "Une photo de profil est recadrée sur le visage. La vignette EXIF, restée intacte, montre la scène entière : la façade derrière la personne, avec le nom de la rue."
+            }
+          },
+          {
+            titre: "Pièges et limites",
+            texte: [
+              [
+                "Les **réseaux sociaux suppriment** les EXIF : cherchez le fichier d'origine (pièce jointe, cloud partagé, site personnel).",
+                "L'heure EXIF est **locale** : sans `OffsetTimeOriginal`, on ne sait pas dans quel fuseau elle a été écrite.",
+                "Un `Software` du type Photoshop ou GIMP signale une **retouche** : la date peut être celle de l'export.",
+                "Les EXIF se **modifient** en une commande : une métadonnée est un indice, à **recouper** avec le contenu de l'image."
+              ],
+              { attention: "Avant de publier une photo ou un document : `exiftool -all= fichier` (ou Propriétés > « Supprimer les propriétés et les informations personnelles »)." }
+            ]
+          }
+        ],
+        challenges: [
+          {
+            niveau: 1,
+            titre: "L'appareil du photographe",
+            enonce: "Cette photo d'un rond-point a été envoyée telle quelle, en pièce jointe.",
+            pieces: [{ image: "assets/osint/meta-1.jpg", nom: "meta-1.jpg" }],
+            question: "Avec quel appareil a-t-elle été prise, quel jour, et par qui ?",
+            champs: [
+              { libelle: "Modèle de l'appareil", reponse: "X-T30", accepte: ["Fujifilm X-T30", "XT30", "Fujifilm XT30"] },
+              { libelle: "Date de prise de vue (JJ/MM/AAAA)", reponse: "14/06/2024", accepte: ["2024-06-14", "2024:06:14", "14 juin 2024", "14-06-2024"] },
+              { libelle: "Auteur déclaré", reponse: "Gaelle Rospars", accepte: ["Gaëlle Rospars", "Rospars"] }
+            ],
+            indices: [
+              "Téléchargez la photo, puis ouvrez-la avec `exiftool` ou un lecteur de métadonnées en ligne.",
+              "Les champs à lire s'appellent `Model`, `DateTimeOriginal` et `Artist`."
+            ],
+            solution: [
+              { code: "$ exiftool meta-1.jpg\nMake                : FUJIFILM\nCamera Model Name   : X-T30\nArtist              : Gaelle Rospars\nDate/Time Original  : 2024:06:14 18:42:07\nOffset Time Original: +02:00" },
+              "Photo prise le **14 juin 2024 à 18 h 42** (UTC+2) avec un **Fujifilm X-T30**, auteur déclaré **Gaelle Rospars** (nom fictif ; EXIF fabriquées pour l'exercice).",
+              "Photo : StephaneP / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "Une route de campagne",
+            enonce: "Une route, un champ, une ferme : rien dans l'image ne permet de la situer.",
+            pieces: [{ image: "assets/osint/meta-2.jpg", nom: "meta-2.jpg" }],
+            question: "Dans quelle commune a-t-elle été prise ?",
+            champs: [
+              { libelle: "Commune", reponse: "Canihuel" },
+              { libelle: "Département (numéro)", reponse: "22", accepte: ["Côtes-d'Armor", "Cotes d'Armor"] }
+            ],
+            indices: [
+              "Le contenu de l'image ne servira pas : regardez les champs `GPS…` des métadonnées.",
+              "Convertissez `48° 18' 57.24\" N` et `3° 6' 39.75\" W` en degrés décimaux. Attention au signe de la longitude.",
+              "Collez `48.3159, -3.1110` dans une carte et lisez le nom de la commune."
+            ],
+            solution: [
+              { code: "GPS Latitude  : 48 deg 18' 57.24\" N  ->  48.31590\nGPS Longitude :  3 deg  6' 39.75\" W  ->  -3.11104" },
+              "Le point tombe sur une route départementale de **Canihuel**, dans les **Côtes-d'Armor (22)**, près du lieu-dit Pellinec. Oublier le signe moins de la longitude `W` envoie le point dans l'Yonne, près de Sens, à plus de 450 km.",
+              "Photo : tykayn / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "La fuite du plan social",
+            enonce: [
+              "Un « plan de réorganisation » de l'entreprise fictive Aqualenn a été publié anonymement sur un forum. La direction veut savoir qui l'a rédigé, et quand."
+            ],
+            pieces: [{ fichier: "assets/osint/meta-3.pdf", nom: "meta-3.pdf", legende: "Le document publié" }],
+            champs: [
+              { libelle: "Auteur", reponse: "Maëlle Kervarec", accepte: ["Kervarec", "Maelle Kervarec"] },
+              { libelle: "Logiciel d'origine", reponse: "Microsoft Word", accepte: ["Word", "Word pour Microsoft 365", "Microsoft Word pour Microsoft 365", "MS Word"] },
+              { libelle: "Date de création (JJ/MM/AAAA)", reponse: "11/03/2024", accepte: ["2024-03-11", "11 mars 2024", "11-03-2024"] }
+            ],
+            indices: [
+              "Ouvrez le PDF dans un lecteur, puis Fichier > Propriétés ; ou `exiftool meta-3.pdf`.",
+              "`CreationDate` se lit `D:AAAAMMJJhhmmss` : `D:20240311…`."
+            ],
+            solution: [
+              { code: "$ exiftool meta-3.pdf\nTitle         : Plan de réorganisation 2024 - v3\nAuthor        : Maëlle Kervarec\nCreator       : Microsoft® Word pour Microsoft 365\nCreate Date   : 2024:03:11 08:15:22+01:00" },
+              "Le PDF a été exporté depuis **Word** le **11 mars 2024** à 8 h 15, sur une session au nom de **Maëlle Kervarec** (personne fictive). Le titre « v3 » indique en plus qu'il existe des versions antérieures."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "Le recadrage qui trahit",
+            enonce: "L'auteur a recadré sa photo pour ne montrer qu'un passage piéton, et a retiré la position GPS.",
+            pieces: [{ image: "assets/osint/meta-4.jpg", nom: "meta-4.jpg" }],
+            question: "Dans quelle ville a-t-elle été prise, et devant quel hôtel ?",
+            champs: [
+              { libelle: "Ville", reponse: "Nice" },
+              { libelle: "Nom de l'hôtel", reponse: "Nice Riviera", accepte: ["Hôtel Nice Riviera", "Hotel Nice Riviera"] }
+            ],
+            indices: [
+              "Pas de GPS : cherchez ce que le fichier contient d'autre que l'image affichée.",
+              "Les EXIF peuvent embarquer une vignette que l'outil de recadrage n'a pas mise à jour.",
+              "`exiftool -b -ThumbnailImage meta-4.jpg > vignette.jpg`, puis ouvrez `vignette.jpg`."
+            ],
+            solution: [
+              "La vignette EXIF (640 × 480) montre la photo **avant recadrage** : une rue bordée de palmiers, et à droite une façade où se lit **« HOTEL NICE RIVIERA »**.",
+              "Une recherche du nom donne l'adresse : 45, rue Pastorelli, à **Nice**. La vue au sol confirme le carrefour.",
+              "Photo : JLZIMMERMANN / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "La note de service",
+            enonce: "Cette note se présente comme rédigée par la direction des ressources humaines d'Aqualenn. Le service juridique doute qu'elle ait été écrite en interne.",
+            pieces: [{ fichier: "assets/osint/meta-5.docx", nom: "meta-5.docx", legende: "La note, au format Word" }],
+            champs: [
+              { libelle: "Organisation déclarée dans Office", reponse: "Morgat RH Conseil" },
+              { libelle: "Dernier compte à avoir enregistré", reponse: "y.quemener", accepte: ["yquemener"] },
+              { libelle: "Nombre de révisions", reponse: 7, tolerance: 0 }
+            ],
+            indices: [
+              "Un `.docx` est une archive ZIP : renommez-le en `.zip` et ouvrez-le.",
+              "Les réponses sont dans `docProps/core.xml` et `docProps/app.xml`."
+            ],
+            solution: [
+              { code: "docProps/core.xml : <dc:creator>Direction RH</dc:creator>\n                    <cp:lastModifiedBy>y.quemener</cp:lastModifiedBy>\n                    <cp:revision>7</cp:revision>\ndocProps/app.xml  : <Template>Modele_Note_MorgatRH.dotx</Template>\n                    <Company>Morgat RH Conseil</Company>" },
+              "Le champ `creator` a été soigné (« Direction RH »), mais pas le reste : la note a connu **7 révisions**, la dernière enregistrée par **y.quemener**, sur un Office déclaré au nom de **Morgat RH Conseil**, avec le modèle de ce cabinet. Elle a été rédigée par un prestataire (tout est fictif)."
+            ]
+          }
+        ]
+      },
+
+      /* ---------------------------------------------------------
+         Enquête 2 — Géolocalisation
+         --------------------------------------------------------- */
+      {
+        type: "enquete",
+        id: "osint-enquete-geolocalisation",
+        titre: "Enquête 2 — Où a été prise cette photo ?",
+        description: "Inventaire des indices, pivot sur le texte, recherche inversée, vue au sol, requêtes géographiques.",
+        methodes: [
+          {
+            titre: "Décrire avant de chercher",
+            texte: [
+              "Avant toute recherche, on fait l'**inventaire** de l'image, zone par zone, en notant tout ce qui se lit ou se reconnaît :",
+              {
+                entetes: ["Famille", "Ce qu'on cherche"],
+                lignes: [
+                  ["Texte", "Enseignes, panneaux, affiches, numéros de téléphone, sites web, noms de rue, publicités sur les bus"],
+                  ["Route", "Côté de circulation, marquages au sol, forme des panneaux, bornes, potelets"],
+                  ["Bâti", "Matériaux (granit, brique, enduit ocre), toits (ardoise, tuiles), hauteur, style"],
+                  ["Nature", "Relief, végétation, couleur de la terre, lumière"]
+                ]
+              },
+              "Repères français utiles :",
+              [
+                "**Panneau d'entrée d'agglomération** : fond blanc, bord rouge, nom de la commune.",
+                "**Bornes kilométriques** : sommet rouge sur une nationale, jaune sur une départementale.",
+                "**Indicatifs téléphoniques** : `01` Île-de-France, `02` Nord-Ouest, `03` Nord-Est, `04` Sud-Est, `05` Sud-Ouest.",
+                "**Bâti régional** : granit et ardoise en Bretagne, brique dans le Nord, façades ocre et tuiles rondes en Méditerranée."
+              ]
+            ],
+            exemple: {
+              titre: "Exemple d'inventaire",
+              texte: "« Façades en granit gris, toits d'ardoise à lucarnes ; enseignes : une boulangerie, une bijouterie de chaîne ; drapeau breton à une fenêtre ; voitures garées à droite, circulation à droite. » → Bretagne, centre-ville ancien, à confirmer par les enseignes."
+            }
+          },
+          {
+            titre: "Faire parler le texte",
+            texte: [
+              "Le texte est l'indice le plus rentable : chaque mot lisible devient une **requête**.",
+              [
+                "Un **commerce local** au nom original : une recherche dans Google Maps suffit souvent.",
+                "Une **chaîne** (Yves Rocher, Julien d'Orcel…) : un seul magasin ne dit rien, mais **deux chaînes voisines** n'ont souvent qu'une rue en commun.",
+                "Un **nom de parking, d'arrêt de bus, de quartier** sur un panneau : il désigne une ville précise.",
+                "Un **numéro de téléphone** ou un **site web** sur une vitrine ou un utilitaire."
+              ],
+              "Zoomez au maximum sur l'original : un mot à moitié lisible (« …ouédic ») se complète par une recherche avec joker."
+            ],
+            exemple: {
+              titre: "Exemple",
+              texte: "Deux enseignes lues sur une photo : « Pharmacie des Remparts » et « Crêperie du Jerzual ». La seconde n'existe qu'à un endroit : la rue du Jerzual, à Dinan. La première est bien dans la même ville : position confirmée par deux indices indépendants."
+            }
+          },
+          {
+            titre: "La recherche inversée",
+            texte: [
+              "On soumet l'image (ou un **recadrage**) à un moteur qui cherche des images semblables :",
+              {
+                entetes: ["Moteur", "Point fort"],
+                lignes: [
+                  ["Google Lens", "Monuments, objets, texte dans l'image"],
+                  ["Yandex Images", "Bâtiments et lieux, très bon sur les façades"],
+                  ["Bing Visual Search", "Seconde opinion, produits"],
+                  ["TinEye", "Retrouver la même image exacte et sa date de première apparition"]
+                ]
+              },
+              "Recadrez sur l'**élément unique** (une façade, un clocher, une enseigne) plutôt que sur toute la scène.",
+              { attention: "Une photo **inédite** (prise par la personne, jamais publiée) ne sera jamais retrouvée telle quelle : la recherche inversée n'identifie alors que les éléments connus qu'elle contient. Sans élément connu, retour à l'inventaire." }
+            ]
+          },
+          {
+            titre: "Vérifier au sol",
+            texte: [
+              "Une hypothèse se **confirme** dans une vue au sol : Google **Street View**, **Panoramax** (photos libres) ou Mapillary.",
+              [
+                "Alignez **deux éléments fixes** (un angle de toit, un lampadaire, une fenêtre) : s'ils se superposent comme sur la photo, vous êtes au bon endroit et dans le bon axe.",
+                "Les commerces changent : la **date** de la photo (EXIF, saison, véhicules) permet de choisir la bonne année dans l'historique de Street View (icône d'horloge).",
+                "**Coordonnées** : clic droit sur le point dans Google Maps, la première ligne du menu donne `latitude, longitude` (un clic les copie)."
+              ]
+            ],
+            exemple: {
+              titre: "Exemple",
+              texte: "Dans Street View, le lampadaire de la photo est à gauche de la troisième fenêtre ; on avance de deux clics jusqu'à ce qu'il soit pile devant : clic droit à cet endroit sur la carte → `47.21843, -1.55362`."
+            }
+          },
+          {
+            titre: "Requêtes géographiques (Overpass Turbo)",
+            texte: [
+              "Quand l'image combine plusieurs éléments banals, on demande à OpenStreetMap **tous les endroits** où ils se trouvent ensemble. **Overpass Turbo** (overpass-turbo.eu) exécute ces requêtes et affiche les résultats sur une carte.",
+              { code: "[out:json][timeout:60];\narea[\"name\"=\"Finistère\"]->.zone;\nnode[\"amenity\"=\"pharmacy\"](area.zone)->.pharmacies;\nnwr[\"amenity\"=\"place_of_worship\"](around.pharmacies:50);\nout center;", legende: "Lieux de culte à moins de 50 m d'une pharmacie, dans le Finistère" },
+              "On remplace les étiquettes par ce qu'on voit : `shop=bakery`, `name~\"Julien d'Orcel\"`, `highway=bus_stop`… L'assistant d'Overpass Turbo traduit aussi une phrase simple en requête."
+            ]
+          }
+        ],
+        challenges: [
+          {
+            niveau: 1,
+            titre: "Suivez les panneaux",
+            enonce: "Photo prise sur une place de stationnement, en été.",
+            pieces: [{ image: "assets/osint/geo-1.jpg", nom: "geo-1.jpg" }],
+            question: "Dans quelle ville a-t-elle été prise ?",
+            champs: [{ libelle: "Ville", reponse: "Saint-Brieuc" }],
+            indices: [
+              "Lisez les panneaux à gauche : ce ne sont pas des directions de villes, mais des **parkings** avec leurs places libres.",
+              "Cherchez « Gouédic » ou « Charner » sur une carte."
+            ],
+            solution: [
+              "Les panneaux de guidage indiquent les parkings **Gare - Charner**, **Gouédic** et **(Les) Champs** : trois noms de parkings de **Saint-Brieuc** (Côtes-d'Armor). Le bâtiment de brique et pierre derrière les arbres est la gare ; à droite, une passerelle en chantier enjambe les voies.",
+              "Photo : StephaneP / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "Une rue au pied des montagnes",
+            enonce: "Un matin de septembre, un cycliste devant soi.",
+            pieces: [{ image: "assets/osint/geo-2.jpg", nom: "geo-2.jpg" }],
+            question: "Dans quelle ville, et dans quelle rue ?",
+            champs: [
+              { libelle: "Ville", reponse: "Annecy" },
+              { libelle: "Rue", reponse: "rue de la Gare", accepte: ["de la Gare"] }
+            ],
+            indices: [
+              "Deux noms se lisent : « Les Cordeliers » sur la façade de gauche, « Le Bouillon » au-dessus de la vitrine de droite.",
+              "« Le Bouillon » est un nom de restaurant très courant : croisez-le avec le relief boisé au fond de la rue, qui exclut la plupart des grandes villes.",
+              "Cherchez « Le Bouillon » dans Google Maps autour des villes des Alpes, puis vérifiez la façade dans Street View."
+            ],
+            solution: [
+              "Le restaurant **Le Bouillon** se trouve au 9, **rue de la Gare** à **Annecy** (Haute-Savoie) ; les immeubles à balcons, le parking à gauche et la montagne au fond (le Semnoz, côté sud) correspondent dans la vue au sol ; le photographe regarde vers le sud-est, vers les reliefs boisés qui dominent la ville.",
+              "Photo : Blueberry / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "Le point exact",
+            enonce: "Une rue commerçante, un soir de juillet.",
+            pieces: [{ image: "assets/osint/geo-3.jpg", nom: "geo-3.jpg" }],
+            question: "Dans quelle ville, et d'où exactement la photo a-t-elle été prise (à 150 m près) ?",
+            champs: [
+              { libelle: "Ville", reponse: "Dinan" },
+              { libelle: "Position du photographe (latitude, longitude)", gps: [48.453873, -2.046198], rayon: 0.15 }
+            ],
+            indices: [
+              "Granit gris, toits d'ardoise à lucarnes, balcons en fer forgé : un centre ancien de Bretagne.",
+              "« Julien d'Orcel » et « Ambiance & Styles » sont des chaînes : cherchez une rue où elles sont **voisines**, avec un « Maître Boulanger » en face.",
+              "Une des villes candidates a deux magasins Julien d'Orcel : l'un dans une zone commerciale, l'autre en centre ancien. Placez-vous dans la rue du second avec Street View et alignez les façades."
+            ],
+            solution: [
+              "Les deux chaînes voisines désignent la **rue du Marchix**, dans la ville close de **Dinan** (Côtes-d'Armor) ; l'autre Julien d'Orcel de Dinan est en zone commerciale, à Léhon. Le photographe est au débouché de la place du Marchix, vers `48.45387, -2.04620`, et regarde vers l'ouest-nord-ouest.",
+              "Photo : PanierAvide / Panoramax, CC BY-SA 4.0."
+            ]
+          },
+          {
+            niveau: 4,
+            titre: "Un boulevard sans nom",
+            enonce: "Ni enseigne lisible, ni panneau : un grand boulevard au petit matin, en avril.",
+            pieces: [{ image: "assets/osint/geo-4.jpg", nom: "geo-4.jpg" }],
+            question: "Dans quelle ville, et sur quel boulevard ?",
+            champs: [
+              { libelle: "Ville", reponse: "Lille" },
+              { libelle: "Boulevard", reponse: "boulevard de la Liberté", accepte: ["de la Liberté", "bd de la Liberté"] }
+            ],
+            indices: [
+              "Zoomez sur le bus articulé à gauche : le toit annonce « Je roule au… », et la publicité sur son flanc vient d'une « Métropole européenne de… ».",
+              "La livrée grise à bandeau rouge appartient au réseau de transport de cette métropole ; la maison de brique et de pierre au fond confirme le Nord.",
+              "Cherchez dans cette ville un boulevard bordé d'une double rangée de platanes, avec un couloir de bus au centre, puis comparez dans Street View."
+            ],
+            solution: [
+              "La publicité du bus vient de la **Métropole européenne de Lille**, et la livrée grise et rouge est celle du réseau Ilévia (bus roulant au gaz naturel). Le large boulevard planté de platanes, avec son couloir de bus central et ses hôtels particuliers de brique, est le **boulevard de la Liberté**, à **Lille**.",
+              "Photo : Métropole européenne de Lille / Panoramax, Licence Ouverte 2.0."
+            ]
+          }
+        ]
+      },
+
+      /* ---------------------------------------------------------
+         Enquête 3 — Plaques d'immatriculation
+         --------------------------------------------------------- */
+      {
+        type: "enquete",
+        id: "osint-enquete-plaques",
+        titre: "Enquête 3 — Une plaque, un véhicule",
+        description: "Lire une plaque française ou européenne, et savoir qui peut connaître l'assureur.",
+        methodes: [
+          {
+            titre: "Lire une plaque française",
+            texte: [
+              {
+                entetes: ["Système", "Format", "Ce qu'il révèle"],
+                lignes: [
+                  ["FNI (1950 – 2009)", "`1234 AB 56`", "Les derniers chiffres (ou `2A`, `2B`, `971`…) = **département d'immatriculation**, qui changeait à chaque déménagement"],
+                  ["SIV (depuis 2009)", "`AB-123-CD`", "Numéro **attribué à vie** au véhicule, dans l'**ordre chronologique national** : il donne une période de première immatriculation en France, pas un lieu"],
+                  ["Identifiant territorial SIV", "Logo de région + numéro à droite", "**Choisi librement** par le titulaire : il ne prouve pas son domicile"],
+                  ["Plaques spéciales", "`W-123-AB` (garage), `WW-123-AB` (provisoire)", "Véhicule de professionnel ou en attente d'immatriculation définitive"]
+                ]
+              }
+            ],
+            exemple: {
+              titre: "Exemple",
+              texte: [
+                { plaques: [{ format: "fni", texte: "7351 KL 35" }, { format: "siv", texte: "FB-214-QT", region: "13" }] },
+                "La première a été immatriculée en **Ille-et-Vilaine (35)**. La seconde ne dit rien du domicile : le titulaire a choisi d'afficher les Bouches-du-Rhône."
+              ]
+            }
+          },
+          {
+            titre: "Les plaques européennes",
+            texte: [
+              "La **bande bleue** porte le code du pays (`F`, `D`, `I`, `E`, `B`, `NL`, `PL`, `A`…). Plusieurs pays codent ensuite le **lieu d'immatriculation** :",
+              {
+                entetes: ["Pays", "Lecture", "Exemples"],
+                lignes: [
+                  ["Allemagne (`D`)", "1 à 3 lettres = district", "`B` Berlin, `M` Munich, `HH` Hambourg, `K` Cologne, `F` Francfort"],
+                  ["Autriche (`A`)", "1 ou 2 lettres = district", "`W` Vienne, `G` Graz, `L` Linz, `S` Salzbourg, `I` Innsbruck"],
+                  ["Pologne (`PL`)", "1re lettre = voïvodie, la suite = district", "`WA`… Varsovie, `KR` Cracovie, `PO` Poznań, `GD` Gdańsk"],
+                  ["Suisse", "2 lettres = canton (pas de bande UE)", "`GE` Genève, `VD` Vaud, `VS` Valais, `ZH` Zurich"],
+                  ["Royaume-Uni", "2 lettres de région + 2 chiffres d'âge ; plaque **arrière jaune**", "`L…` Londres, `M…` Manchester ; `24` = mars à août 2024, `74` = septembre 2024 à février 2025"],
+                  ["Italie, Espagne", "Numérotation nationale", "Aucun lieu dans le numéro"]
+                ]
+              }
+            ]
+          },
+          {
+            titre: "Du numéro au véhicule",
+            texte: [
+              [
+                "Les **sites de pièces détachées** demandent la plaque pour trouver les bonnes pièces : ils affichent **marque, modèle, motorisation, date de mise en circulation**. Aucune identité n'en sort.",
+                "**HistoVec** (service public) donne l'historique d'un véhicule, mais seulement à partir d'un rapport que le vendeur choisit de partager.",
+                "Les photos de rue publiées (Street View, Panoramax) **floutent** les plaques."
+              ],
+              "Comparer le modèle annoncé par la plaque et le véhicule photographié révèle les **doublettes** : une fausse plaque recopiée sur une voiture du même modèle."
+            ]
+          },
+          {
+            titre: "Et l'assureur ?",
+            texte: [
+              "Depuis le 1er janvier 2019, le **Fichier des véhicules assurés (FVA)** recense, pour chaque véhicule, l'**assureur** qui couvre sa responsabilité civile et le **numéro de contrat**. Il est constitué par l'**AGIRA** (Association pour la gestion des informations sur le risque en assurance) et alimenté par les assureurs.",
+              "Peuvent le consulter :",
+              [
+                "les **forces de l'ordre**, lors des contrôles routiers ;",
+                "le **FGAO** (Fonds de garantie des assurances obligatoires de dommages), pour indemniser les victimes quand l'auteur est **inconnu ou non assuré**."
+              ],
+              { attention: "Un particulier ne peut **pas** interroger le FVA à partir d'une plaque. Après un accident, l'assureur figure sur le constat amiable ; en cas de délit de fuite, on porte plainte avec la plaque relevée, et le FGAO prend le relais. Une plaque est une **donnée personnelle** au sens de la CNIL." }
+            ]
+          }
+        ],
+        challenges: [
+          {
+            niveau: 1,
+            titre: "Le vieux format",
+            enonce: "Trois véhicules anciens photographiés dans un rassemblement.",
+            pieces: [{ plaques: [{ format: "fni", texte: "5419 RT 29" }, { format: "fni", texte: "812 BZE 69" }, { format: "fni", texte: "4207 WA 2A", noire: true }] }],
+            question: "Dans quel département chacun a-t-il été immatriculé ?",
+            champs: [
+              { libelle: "`5419 RT 29`", reponse: "Finistère", accepte: ["29"] },
+              { libelle: "`812 BZE 69`", reponse: "Rhône", accepte: ["69"] },
+              { libelle: "`4207 WA 2A`", reponse: "Corse-du-Sud", accepte: ["2A"] }
+            ],
+            indices: ["Au format FNI, seuls les derniers caractères comptent."],
+            solution: "`29` = **Finistère**, `69` = **Rhône**, `2A` = **Corse-du-Sud** (la Corse est divisée en `2A` et `2B` depuis 1976). Les plaques noires à caractères blancs sont réservées aux véhicules de collection."
+          },
+          {
+            niveau: 1,
+            type: "qcm",
+            titre: "Le logo de droite",
+            enonce: "Une voiture récente est garée devant le domicile d'une personne recherchée.",
+            pieces: [{ plaques: [{ format: "siv", texte: "GH-482-PK", region: "56" }] }],
+            question: "Que vous apprend le « 56 » à droite de la plaque ?",
+            choix: [
+              "Rien de certain : le titulaire choisit librement le département affiché",
+              "Le titulaire habite le Morbihan",
+              "Le véhicule a été vendu par un garage du Morbihan",
+              "Le véhicule a été immatriculé pour la première fois dans le Morbihan"
+            ],
+            reponse: 0,
+            solution: "Avec le SIV, l'identifiant territorial est un **choix** du titulaire, qui peut afficher n'importe quel département, y compris celui de ses origines. Seul le numéro `GH-482-PK` est attaché au véhicule."
+          },
+          {
+            niveau: 2,
+            titre: "Plaques d'Europe",
+            enonce: "Cinq véhicules étrangers relevés sur le parking d'un salon professionnel.",
+            pieces: [{
+              plaques: [
+                { format: "eu", pays: "D", texte: "HH AB 1234" },
+                { format: "eu", pays: "A", texte: "W 31652 K" },
+                { format: "eu", pays: "PL", texte: "KR 4H721" },
+                { format: "ch", texte: "VS 123456" },
+                { format: "uk", texte: "LB24 XKD" }
+              ]
+            }],
+            champs: [
+              { libelle: "Allemagne : ville", reponse: "Hambourg", accepte: ["Hamburg"] },
+              { libelle: "Autriche : ville", reponse: "Vienne", accepte: ["Wien"] },
+              { libelle: "Pologne : ville", reponse: "Cracovie", accepte: ["Kraków", "Krakow"] },
+              { libelle: "Suisse : canton", reponse: "Valais", accepte: ["Wallis", "VS"] },
+              { libelle: "Royaume-Uni : année d'immatriculation", reponse: 2024, tolerance: 0 },
+              { libelle: "Royaume-Uni : ville de la région d'immatriculation", reponse: "Londres", accepte: ["London"] }
+            ],
+            indices: [
+              "Pour l'Allemagne, `HH` se lit « Hansestadt Hamburg ».",
+              "Pour le Royaume-Uni, la 1re lettre donne la région, les deux chiffres suivants la période."
+            ],
+            solution: [
+              [
+                "`HH` = **Hambourg** (ville hanséatique).",
+                "`W` = **Vienne** (Wien).",
+                "`KR` = **Cracovie** (ville de Kraków, voïvodie de Petite-Pologne).",
+                "`VS` = canton du **Valais**, avec l'écusson suisse.",
+                "`LB24` : `L` = région de **Londres**, `24` = immatriculé entre mars et août **2024** ; le jaune indique une plaque arrière."
+              ]
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "Délit de fuite",
+            enonce: [
+              "Un véhicule a heurté le vôtre sur un parking puis est reparti. Vous avez relevé sa plaque. Vous voulez savoir qui l'assure."
+            ],
+            champs: [
+              { libelle: "Le fichier qui associe chaque véhicule à son assureur (sigle)", reponse: "FVA", accepte: ["Fichier des véhicules assurés"] },
+              { libelle: "L'organisme qui le constitue (sigle)", reponse: "AGIRA" },
+              { libelle: "L'organisme qui peut l'interroger pour indemniser la victime si l'auteur reste inconnu ou non assuré (sigle)", reponse: "FGAO", accepte: ["Fonds de garantie des assurances obligatoires de dommages", "Fonds de garantie"] }
+            ],
+            indices: ["Relisez la méthode « Et l'assureur ? »."],
+            solution: [
+              "Le **FVA**, constitué par l'**AGIRA** depuis 2019, donne l'assureur et le numéro de contrat de chaque véhicule. Vous ne pouvez pas l'interroger vous-même : vous portez plainte avec la plaque, les forces de l'ordre peuvent consulter le fichier, et si l'auteur n'est pas identifié ou pas assuré, le **FGAO** vous indemnise."
+            ]
+          }
+        ]
       }
+
     ]
-  });
+  };
+
+  /* =========================================================
+     CHAPITRE 3 — Enquêtes sur traces numériques
+     ========================================================= */
+
+  const ch3 = {
+    id: "ch3",
+    titre: "Chapitre 3 — Enquêtes sur traces numériques",
+    description: "Remonter un courriel, faire parler un nom de domaine, puis une enquête complète.",
+    exercices: [
+
+      /* ---------------------------------------------------------
+         Enquête 4 — Courriels
+         --------------------------------------------------------- */
+      {
+        type: "enquete",
+        id: "osint-enquete-courriels",
+        titre: "Enquête 4 — Remonter un courriel",
+        description: "Expéditeur réel, chemin des serveurs, adresse IP d'origine, fuseau horaire, pivot sur l'IP.",
+        methodes: [
+          {
+            titre: "Afficher les en-têtes",
+            texte: [
+              "Le corps d'un courriel se falsifie à volonté ; les **en-têtes** ajoutés par chaque serveur traversé, beaucoup moins.",
+              {
+                entetes: ["Client", "Chemin"],
+                lignes: [
+                  ["Gmail", "⋮ > Afficher l'original"],
+                  ["Outlook", "Fichier > Propriétés > En-têtes Internet"],
+                  ["Thunderbird", "Ctrl + U"],
+                  ["Fichier `.eml`", "S'ouvre dans n'importe quel éditeur de texte"]
+                ]
+              },
+              "Les analyseurs en ligne (Google Admin Toolbox « Messageheader », MXToolbox « Email Header Analyzer ») remettent les sauts dans l'ordre et calculent les délais."
+            ]
+          },
+          {
+            titre: "Qui écrit vraiment ?",
+            texte: [
+              {
+                entetes: ["En-tête", "Ce qu'il dit", "Fiabilité"],
+                lignes: [
+                  ["`From`", "L'expéditeur affiché", "Écrit par l'expéditeur : falsifiable"],
+                  ["`Return-Path`", "L'adresse d'**enveloppe**, où reviennent les erreurs", "Celle que vérifie SPF"],
+                  ["`Reply-To`", "Où partira **votre réponse**", "Souvent l'adresse réelle de l'escroc"],
+                  ["`Message-ID`", "Identifiant créé par le **logiciel ou le serveur d'origine**", "Son domaine trahit le vrai service"],
+                  ["`User-Agent` / `X-Mailer`", "Le logiciel de messagerie", "Indice sur le poste"]
+                ]
+              },
+              "Un `From` de « La Poste » avec un `Return-Path` et un `Reply-To` sur deux autres domaines : le message n'a rien à voir avec La Poste."
+            ]
+          },
+          {
+            titre: "Lire les Received de bas en haut",
+            texte: [
+              "Chaque serveur traversé **ajoute** une ligne `Received` **en haut** du message. On les lit donc **de bas en haut** : la plus basse est la plus proche de l'expéditeur.",
+              { code: "Received: from relais.fai.example ([192.0.2.10])          <- 2e saut\n        by mx.destinataire.example; Mon, 7 Oct 2024 10:00:05 +0200\nReceived: from PC-COMPTA ([10.0.0.12]) (unknown [198.51.100.7])  <- 1er saut\n        by relais.fai.example; Mon, 7 Oct 2024 08:00:03 +0000", legende: "Deux sauts" },
+              [
+                "`from PC-COMPTA` : le **nom de machine** annoncé par l'expéditeur (HELO).",
+                "Les adresses `10.x`, `172.16-31.x`, `192.168.x` sont **privées** : elles ne sortent pas du réseau local.",
+                "La première adresse **publique** (`198.51.100.7`) est celle de la connexion de l'expéditeur, sauf si son fournisseur la masque (Gmail le fait)."
+              ]
+            ]
+          },
+          {
+            titre: "Authentification et horodatage",
+            texte: [
+              "`Authentication-Results` résume les contrôles du serveur destinataire :",
+              [
+                "`spf=pass` : le serveur d'envoi est autorisé par le domaine du `Return-Path` ;",
+                "`dkim=pass header.d=…` : le message est signé par ce domaine et n'a pas été modifié ;",
+                "`dmarc=fail` : le domaine du `From` n'est **pas aligné** avec ceux validés par SPF ou DKIM — l'affichage ment."
+              ],
+              "L'en-tête `Date` porte le **décalage horaire** de l'expéditeur : `+0200` = heure d'été française, `-0400` = côte Est américaine en été. Heure UTC = heure affichée **moins** le décalage.",
+              { attention: "Trois « pass » sur un message envoyé depuis un Gmail gratuit prouvent seulement que **Gmail** l'a envoyé." }
+            ],
+            exemple: {
+              titre: "Exemple",
+              texte: "`Date: Mon, 7 Oct 2024 10:03:00 -0400` → 10 h 03 + 4 h = **14 h 03 UTC**, soit 16 h 03 à Paris. Un fournisseur « parisien » qui écrit à l'heure de New York mérite une question."
+            }
+          },
+          {
+            titre: "Pivoter sur une adresse IP",
+            texte: [
+              "Une adresse IP publique appartient à un bloc attribué par un **registre régional** (RIR) : **RIPE NCC** (Europe, Moyen-Orient), **ARIN** (Amérique du Nord), **APNIC** (Asie-Pacifique), LACNIC, AFRINIC.",
+              { code: "whois 192.0.2.10\ncurl https://rdap.org/ip/192.0.2.10", legende: "Interroger le registre" },
+              "On en tire l'**organisation** titulaire, le pays, le numéro de système autonome (AS). Une IP de Google ou Microsoft désigne le **service** utilisé, pas une personne ; une IP de fournisseur d'accès désigne un abonné, que seule la justice peut faire identifier.",
+              "Sur l'**adresse de courriel** elle-même : Have I Been Pwned (fuites), recherche du pseudonyme sur d'autres services (WhatsMyName)."
+            ]
+          }
+        ],
+        challenges: [
+          {
+            niveau: 1,
+            titre: "Votre colis est bloqué",
+            enonce: "Camille a reçu ce message ce matin. Avant de cliquer, elle vous transmet le fichier.",
+            pieces: [{
+              nom: "colis.eml",
+              texte: [
+                "Return-Path: <rebond-71842@envoi-massif.example>",
+                "Received: from mta3.envoi-massif.example (mta3.envoi-massif.example [192.0.2.41])",
+                "        by mx1.messagerie.example with ESMTPS id 4F9kQ2",
+                "        for <camille.martin@messagerie.example>; Tue, 8 Oct 2024 07:58:12 +0200 (CEST)",
+                "Authentication-Results: mx1.messagerie.example;",
+                "        spf=pass (domain of envoi-massif.example designates 192.0.2.41 as permitted sender) smtp.mailfrom=envoi-massif.example;",
+                "        dkim=pass header.d=envoi-massif.example;",
+                "        dmarc=fail (p=NONE) header.from=laposte-suivi.example",
+                "From: \"La Poste - Colissimo\" <ne-pas-repondre@laposte-suivi.example>",
+                "Reply-To: service-client@relance-colis.example",
+                "To: camille.martin@messagerie.example",
+                "Subject: Votre colis n°6A0428817 est en attente : frais de 1,99 EUR",
+                "Date: Tue, 8 Oct 2024 07:58:09 +0200",
+                "Message-ID: <20241008055809.7f3a@envoi-massif.example>",
+                "MIME-Version: 1.0",
+                "Content-Type: text/plain; charset=utf-8",
+                "",
+                "Bonjour,",
+                "",
+                "Votre colis n'a pas pu être livré : des frais de réexpédition de 1,99 EUR",
+                "restent à régler sous 24 heures. Sans paiement, il sera retourné.",
+                "",
+                "Régler maintenant : https://relance-colis.example/paiement?id=6A0428817",
+                "",
+                "Le service client"
+              ].join("\n")
+            }],
+            champs: [
+              { libelle: "Domaine qui a réellement envoyé le message", reponse: "envoi-massif.example" },
+              { libelle: "Domaine où partirait la réponse de Camille", reponse: "relance-colis.example" },
+              { libelle: "Résultat du contrôle DMARC", reponse: "fail", accepte: ["échec", "echec"] }
+            ],
+            indices: [
+              "Comparez `From`, `Return-Path`, `Reply-To` et le domaine du `Message-ID`.",
+              "Le contrôle DMARC est dans `Authentication-Results`."
+            ],
+            solution: [
+              "Le message est parti des serveurs d'**envoi-massif.example** (`Return-Path`, `Received`, `Message-ID`, signature DKIM) ; une réponse partirait vers **relance-colis.example**, le même domaine que le lien de paiement. Le `From` « La Poste » n'est validé par rien : **DMARC échoue** (`fail`).",
+              "SPF et DKIM sont pourtant « pass » : ils valident **envoi-massif.example**, pas La Poste."
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "Le fournisseur pressé",
+            enonce: "Un « fournisseur parisien » réclame un paiement urgent. Le service comptable veut savoir d'où il écrit vraiment.",
+            pieces: [{
+              nom: "fournisseur.eml",
+              texte: [
+                "Return-Path: <facturation@atelier-kerne.example>",
+                "Received: from smtp.webmail-express.example (smtp.webmail-express.example [203.0.113.200])",
+                "        by mx.aqualenn.example (Postfix) with ESMTPS id 51C0E",
+                "        for <compta@aqualenn.example>; Mon, 14 Oct 2024 16:03:49 +0200 (CEST)",
+                "Received: from filter-03.webmail-express.example (localhost [127.0.0.1])",
+                "        by smtp.webmail-express.example (Postfix) with ESMTP id 9A7F3",
+                "        for <compta@aqualenn.example>; Mon, 14 Oct 2024 14:03:48 +0000 (UTC)",
+                "Received: from [10.12.0.7] (unknown [198.51.100.83])",
+                "        (Authenticated sender: facturation@atelier-kerne.example)",
+                "        by filter-03.webmail-express.example (Postfix) with ESMTPSA id 91B2C",
+                "        for <compta@aqualenn.example>; Mon, 14 Oct 2024 14:03:47 +0000 (UTC)",
+                "Authentication-Results: mx.aqualenn.example; spf=pass smtp.mailfrom=atelier-kerne.example;",
+                "        dkim=pass header.d=atelier-kerne.example; dmarc=pass header.from=atelier-kerne.example",
+                "From: \"Atelier Kerné - Facturation\" <facturation@atelier-kerne.example>",
+                "To: compta@aqualenn.example",
+                "Subject: RE: Facture F-2024-0917 - relance avant pénalités",
+                "Date: Mon, 14 Oct 2024 10:03:45 -0400",
+                "Message-ID: <8c1f2e@atelier-kerne.example>",
+                "User-Agent: Roundcube Webmail/1.6.6",
+                "",
+                "Bonjour,",
+                "Suite au changement de notre banque, merci d'effectuer le règlement",
+                "de la facture F-2024-0917 sur le nouveau RIB ci-joint, avant ce soir.",
+                "Cordialement, le service facturation (Paris 11e)"
+              ].join("\n")
+            }],
+            champs: [
+              { libelle: "Adresse IP publique de l'expéditeur", reponse: "198.51.100.83" },
+              { libelle: "Décalage de son horloge par rapport à UTC, en heures (ex. +2)", reponse: -4, tolerance: 0 },
+              { libelle: "Heure d'envoi en UTC (hh:mm)", reponse: "14:03", accepte: ["14h03", "14 h 03"] }
+            ],
+            indices: [
+              "Lisez les `Received` de bas en haut et écartez les adresses privées (`10.x`) et locales (`127.0.0.1`).",
+              "Le décalage est à la fin de l'en-tête `Date`."
+            ],
+            solution: [
+              "Le saut le plus bas montre le poste de l'expéditeur : adresse privée `10.12.0.7` derrière l'adresse publique **198.51.100.83**. Son horloge est réglée sur **UTC−4** (`-0400`), soit l'heure d'été de la côte Est américaine ou du Québec : 10 h 03 locales = **14 h 03 UTC** = 16 h 03 à Paris, ce que confirment les `Received`.",
+              "Ici, SPF, DKIM et DMARC passent : le compte du vrai fournisseur a probablement été **piraté**. C'est le changement de RIB, l'urgence et le fuseau horaire qui doivent alerter — on rappelle le fournisseur à un numéro connu, jamais à celui du courriel."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "La directrice financière sur Gmail",
+            enonce: "La comptabilité d'Aqualenn reçoit un ordre de virement de la « Direction financière ». Tous les contrôles d'authentification sont au vert.",
+            pieces: [{
+              nom: "virement.eml",
+              texte: [
+                "Return-Path: <aqualenn.direction.financiere@gmail.com>",
+                "Received: from mail-wr1-f54.google.com (mail-wr1-f54.google.com [209.85.221.54])",
+                "        by mx.aqualenn.example (Postfix) with ESMTPS id 3C1F0",
+                "        for <compta@aqualenn.example>; Thu, 17 Oct 2024 09:41:27 +0200 (CEST)",
+                "Received: by mail-wr1-f54.google.com with SMTP id ffacd0b85a97d-37d4c1b1a2eso1180344f8f.3",
+                "        for <compta@aqualenn.example>; Thu, 17 Oct 2024 00:41:26 -0700 (PDT)",
+                "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=gmail.com; s=20230601;",
+                "        h=to:subject:message-id:date:from:mime-version; bh=1cY0...; b=Hq7e...",
+                "Authentication-Results: mx.aqualenn.example; spf=pass smtp.mailfrom=gmail.com;",
+                "        dkim=pass header.d=gmail.com; dmarc=pass header.from=gmail.com",
+                "From: \"Aqualenn - Direction financière\" <aqualenn.direction.financiere@gmail.com>",
+                "To: compta@aqualenn.example",
+                "Subject: Virement confidentiel - acquisition en cours",
+                "Date: Thu, 17 Oct 2024 09:41:13 +0200",
+                "Message-ID: <CAJ8x2Q=Xk1mP0f9a@mail.gmail.com>",
+                "",
+                "Bonjour,",
+                "Dans le cadre d'une acquisition confidentielle, merci de préparer un virement",
+                "de 48 600 EUR. Ne pas en parler en interne avant l'annonce officielle.",
+                "Je suis en réunion, répondez uniquement par courriel."
+              ].join("\n")
+            }],
+            champs: [
+              { libelle: "Organisation titulaire de l'adresse IP du dernier serveur d'envoi", reponse: "Google", accepte: ["Google LLC"] },
+              { libelle: "Registre régional (RIR) qui a attribué ce bloc d'adresses", reponse: "ARIN" },
+              { libelle: "Service de messagerie utilisé par l'escroc", reponse: "Gmail", accepte: ["Google Mail"] }
+            ],
+            indices: [
+              "Interrogez le registre sur `209.85.221.54` : `whois 209.85.221.54` ou https://rdap.org/ip/209.85.221.54.",
+              "Le domaine du `Message-ID` et la signature DKIM disent la même chose."
+            ],
+            solution: [
+              { code: "$ whois 209.85.221.54\nNetRange:   209.85.128.0 - 209.85.255.255\nNetName:    GOOGLE\nOrganization: Google LLC (GOGL)\n... (registre : ARIN)" },
+              "L'IP appartient à **Google LLC**, bloc attribué par l'**ARIN** : c'est un serveur d'envoi de **Gmail** (`mail-wr1-…google.com`, `Message-ID` en `@mail.gmail.com`, DKIM `d=gmail.com`). Les trois « pass » prouvent seulement que Gmail a bien envoyé le message d'un compte gratuit dont le nom imite l'entreprise : c'est une **fraude au président**. L'adresse IP de l'escroc, elle, est masquée par Gmail."
+            ]
+          }
+        ]
+      },
+
+      /* ---------------------------------------------------------
+         Enquête 5 — Domaines et sites web
+         --------------------------------------------------------- */
+      {
+        type: "enquete",
+        id: "osint-enquete-domaines",
+        titre: "Enquête 5 — Un domaine, un site",
+        description: "WHOIS et RDAP, DNS, certificats, Wayback Machine et code source, sur un vrai domaine.",
+        methodes: [
+          {
+            titre: "WHOIS et RDAP",
+            texte: [
+              "Le registre d'un domaine en donne l'**état civil** : bureau d'enregistrement (registrar), dates de **création** et d'expiration, statut, **titulaire** (masqué pour un particulier depuis le RGPD, visible pour une organisation), serveurs de noms.",
+              {
+                entetes: ["Moyen", "Exemple"],
+                lignes: [
+                  ["Ligne de commande", "`whois exemple.fr`"],
+                  ["RDAP (le successeur du WHOIS, en JSON)", "`https://rdap.nic.fr/domain/exemple.fr` pour un .fr, `https://lookup.icann.org` pour les autres"],
+                  ["Recherche web", "Le whois de l'Afnic (afnic.fr) pour les .fr"]
+                ]
+              },
+              { remarque: "RDAP donne les dates en UTC : un domaine créé le 6 septembre à 0 h à Paris apparaît le 5 septembre à 22 h." }
+            ]
+          },
+          {
+            titre: "Le DNS raconte l'infrastructure",
+            texte: [
+              {
+                entetes: ["Enregistrement", "Ce qu'il révèle"],
+                lignes: [
+                  ["`A` / `AAAA`", "L'hébergeur du site (à pivoter avec un whois de l'IP)"],
+                  ["`MX`", "La messagerie : Google Workspace, Microsoft 365, serveur maison"],
+                  ["`TXT`", "Politique SPF (tous les services autorisés à envoyer en son nom) et jetons de vérification (`google-site-verification`, `MS=`…) : la liste des outils SaaS utilisés"],
+                  ["`NS`", "Le gestionnaire DNS (Cloudflare, OVH…)"]
+                ]
+              },
+              { code: "dig exemple.fr MX +short\ndig exemple.fr TXT +short\nnslookup -type=NS exemple.fr", legende: "Interroger le DNS" }
+            ]
+          },
+          {
+            titre: "Les certificats trahissent les sous-domaines",
+            texte: [
+              "Chaque certificat TLS émis est inscrit dans des journaux publics (**Certificate Transparency**). **crt.sh** les interroge : tous les sous-domaines qui ont eu un certificat apparaissent, y compris des serveurs de test ou d'administration oubliés.",
+              { code: "https://crt.sh/?q=%25.exemple.fr", legende: "Tous les certificats des sous-domaines (%25 = joker %)" }
+            ]
+          },
+          {
+            titre: "Remonter le temps : la Wayback Machine",
+            texte: [
+              "**web.archive.org** archive le web depuis 1996. Un domaine tapé dans la barre affiche un **calendrier** des captures.",
+              [
+                "`web.archive.org/web/2005/https://exemple.fr` : la capture la plus proche de 2005.",
+                "`web.archive.org/cdx/search/cdx?url=exemple.fr&limit=5` : la **liste brute** des plus anciennes captures, avec leur horodatage `AAAAMMJJhhmmss`.",
+                "Ajouter `id_` après l'horodatage (`/web/19980214181349id_/…`) donne la page **telle qu'archivée**, sans le bandeau de l'Archive."
+              ],
+              "On y retrouve d'anciens organigrammes, des adresses de courriel, des pages retirées depuis."
+            ]
+          },
+          {
+            titre: "Lire le code source",
+            texte: [
+              "`Ctrl + U` affiche le code d'une page. On y cherche :",
+              [
+                "les **commentaires** HTML oubliés (`<!-- … -->`) ;",
+                "les balises `<meta>` (auteur, générateur, description) ;",
+                "le texte des **scripts** (messages, chemins, adresses d'API) ;",
+                "les **identifiants d'analytics** (`UA-…`, `G-…`) : le même identifiant sur deux sites désigne le même propriétaire ;",
+                "les fichiers `robots.txt` et `sitemap.xml`, qui listent ce que le site voudrait cacher aux moteurs."
+              ]
+            ]
+          }
+        ],
+        challenges: [
+          {
+            niveau: 1,
+            titre: "L'acte de naissance d'un domaine",
+            enonce: "Cible : le domaine de votre école, `epita.fr`.",
+            question: "En quelle année a-t-il été enregistré, et quelle organisation en est titulaire ?",
+            champs: [
+              { libelle: "Année d'enregistrement", reponse: 1995, tolerance: 0 },
+              { libelle: "Organisation titulaire (premier mot suffit)", reponse: "IONIS", accepte: ["IONIS Group", "Groupe IONIS", "IONIS GROUP - IONIS SCHOOLS OF TECHNOLOGY AND MANAGEMENT"] }
+            ],
+            indices: [
+              "Un `.fr` : interrogez l'Afnic, ou ouvrez https://rdap.nic.fr/domain/epita.fr.",
+              "Dans la réponse RDAP, cherchez l'événement `registration` et l'entité au rôle `registrant`."
+            ],
+            solution: [
+              { code: "\"eventAction\": \"registration\", \"eventDate\": \"1995-09-05T22:00:00Z\"\n\"roles\": [\"registrant\"] ... \"IONIS GROUP - IONIS SCHOOLS OF TECHNOLOGY AND MANAGEMENT\"" },
+              "Domaine créé en **1995** (le 6 septembre, heure de Paris), titulaire **IONIS Group**, la maison mère de l'école. Une organisation n'est pas protégée par le masquage RGPD : son nom apparaît en clair."
+            ]
+          },
+          {
+            niveau: 2,
+            titre: "La plus vieille capture",
+            enonce: "Toujours `epita.fr`.",
+            question: "De quand date la plus ancienne capture du site dans la Wayback Machine, et quel était le titre de la page ?",
+            champs: [
+              { libelle: "Date de la capture (JJ/MM/AAAA)", reponse: "14/02/1998", accepte: ["1998-02-14", "14 février 1998", "14-02-1998"] },
+              { libelle: "Titre de la page (balise `<title>`)", reponse: "EPITA - Accueil", accepte: ["EPITA Accueil"] }
+            ],
+            indices: [
+              "Le calendrier de web.archive.org démarre à la première année archivée ; la requête `cdx` donne directement la plus ancienne.",
+              "Le titre est celui de l'onglet, ou la balise `<title>` dans le code source de la capture."
+            ],
+            solution: [
+              { code: "https://web.archive.org/cdx/search/cdx?url=epita.fr&limit=1\nfr,epita)/ 19980214181349 http://www.epita.fr:80/ text/html 200 ..." },
+              "Première capture le **14 février 1998** à 18 h 13 (UTC). Le code de la page commence par `<TITLE>EPITA - Accueil</TITLE>`."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "Ce que cache le code source",
+            enonce: "Sur cette capture de 1998, un message défilait dans la barre d'état du navigateur au survol des boutons. Il n'apparaît nulle part dans la page affichée.",
+            question: "Quelle date de journée portes ouvertes annonçait-il ?",
+            champs: [
+              { libelle: "Date (jour et mois)", reponse: "samedi 7 mars", accepte: ["7 mars", "07 mars", "samedi 07 mars", "7 mars 1998", "07/03/1998", "07/03", "7/03"] }
+            ],
+            indices: [
+              "Ouvrez la capture sans le bandeau de l'Archive : ajoutez `id_` après l'horodatage dans l'URL, puis `Ctrl + U`.",
+              "Le message est dans le JavaScript en tête de page, dans un tableau `msgs`."
+            ],
+            solution: [
+              { code: "msgs[4] = \"Prochaines journées portes ouvertes : Samedi 07 Mars. Ouvert de 10h à 17h.    --     \"" },
+              "Le script de la page d'accueil remplissait un tableau de messages affichés dans la barre d'état (`window.status`) : la journée portes ouvertes du **samedi 7 mars 1998**. Le même code source contient aussi, dans une balise `<meta name=\"AUTHOR\">`, les noms et adresses des étudiants qui avaient réalisé le site : exactement le genre d'information qu'on retrouve dans une archive vieille de 25 ans."
+            ]
+          }
+        ]
+      },
+
+      /* ---------------------------------------------------------
+         Enquête finale — tout mobiliser
+         --------------------------------------------------------- */
+      {
+        type: "enquete",
+        id: "osint-enquete-finale",
+        titre: "Enquête finale — L'affaire Brume",
+        description: "Un courriel anonyme, une photo, un communiqué : toutes les techniques à la fois.",
+        methodes: [
+          {
+            titre: "Inventorier les pièces",
+            texte: [
+              "Avant de chercher, on liste ce qu'on a et ce qu'on cherche. Pour chaque pièce :",
+              [
+                "**courriel** : en-têtes (expéditeur, chemin, IP, nom de machine, fuseau, logiciel) ;",
+                "**image** : métadonnées d'abord (gratuites), contenu ensuite (géolocalisation) ;",
+                "**document** : propriétés (auteur, logiciel, dates)."
+              ]
+            ]
+          },
+          {
+            titre: "Pivoter et recouper",
+            texte: [
+              "Chaque information trouvée devient une **nouvelle requête** : un nom de machine se compare à un nom d'auteur, une date EXIF se compare à la date d'envoi, un lieu se compare à l'adresse de la cible.",
+              "Une conclusion ne tient que si **deux indices indépendants** la soutiennent. On note pour chacune sa **preuve** et son **niveau de confiance** (certain, probable, possible)."
+            ],
+            exemple: {
+              titre: "Exemple de conclusion rédigée",
+              texte: "« La photo a été prise le 3 mai à 9 h 12 (EXIF, fuseau +02:00) rue X à Brest (enseignes A et B, vue au sol). Confiance : certaine pour le lieu, probable pour l'heure (EXIF modifiables). »"
+            }
+          }
+        ],
+        challenges: [
+          {
+            niveau: 3,
+            titre: "« À deux pas de chez vous »",
+            enonce: "Le 25 juillet 2017, la direction de l'entreprise fictive Aqualenn reçoit ce courriel du « collectif Brume », avec une photo et un communiqué en pièces jointes.",
+            pieces: PIECES_BRUME,
+            question: "Dans quelle ville la photo a-t-elle été prise ?",
+            champs: [{ libelle: "Ville", reponse: "Quimper" }],
+            indices: [
+              "Les métadonnées de la photo n'ont pas de GPS, mais une date de prise de vue : les commerces et bâtiments de 2017 ont pu disparaître depuis.",
+              "« SERNAM » était le service de messageries de la SNCF : ses halles sont toujours au bord d'une gare.",
+              "Granit, ardoise, pavés : cherchez une gare bretonne dont la halle SERNAM bordait un parking pavé, avec l'historique de Street View réglé sur 2017."
+            ],
+            solution: [
+              "La halle **SERNAM** au bord d'un parking pavé, face à des immeubles de granit, est celle de la place Louis-Armand, devant la gare de **Quimper** (Finistère) ; le quartier de la gare a été réaménagé depuis, d'où l'intérêt de la date EXIF pour remonter dans l'historique des vues au sol.",
+              "Photo : StephaneP / Panoramax, CC BY-SA 4.0 (métadonnées fabriquées)."
+            ]
+          },
+          {
+            niveau: 3,
+            titre: "Le téléphone du photographe",
+            enonce: "Le courriel affirme que la photo a été prise « aujourd'hui ».",
+            pieces: PIECES_BRUME,
+            champs: [
+              { libelle: "Date et heure de prise de vue (JJ/MM/AAAA hh:mm)", reponse: "25/07/2017 14:22", accepte: ["25/07/2017 14h22", "2017-07-25 14:22", "25/07/2017 à 14:22", "25/07/2017 à 14h22"] },
+              { libelle: "Nom commercial du téléphone", reponse: "Galaxy S7", accepte: ["Samsung Galaxy S7"] },
+              { libelle: "Heures écoulées entre la photo et l'envoi du courriel (arrondi)", reponse: 7, tolerance: 0.08 }
+            ],
+            indices: [
+              "Lisez `DateTimeOriginal` et `Model` dans les EXIF de la photo.",
+              "Le modèle `SM-G930F` est une référence interne : cherchez-la sur le web.",
+              "Le courriel est daté de 21 h 46 (+0200), la photo de 14 h 22 (+02:00) : même fuseau."
+            ],
+            solution: [
+              { code: "Make                 : samsung\nCamera Model Name    : SM-G930F\nSoftware             : G930FXXU1DQEU\nDate/Time Original   : 2017:07:25 14:22:22\nOffset Time Original : +02:00" },
+              "Photo prise le **25 juillet 2017 à 14 h 22** avec un **Samsung Galaxy S7** (référence européenne SM-G930F), environ **7 heures** avant l'envoi du courriel à 21 h 46 : l'affirmation « aujourd'hui » est cohérente."
+            ]
+          },
+          {
+            niveau: 4,
+            titre: "Qui est derrière Brume ?",
+            enonce: "Le collectif se veut anonyme. Ses deux pièces ont pourtant été préparées sur un ordinateur personnel.",
+            pieces: PIECES_BRUME,
+            champs: [
+              { libelle: "Nom d'utilisateur dans les propriétés du communiqué", reponse: "gkerlaouen" },
+              { libelle: "Nom de machine annoncé au serveur d'envoi du courriel", reponse: "LAPTOP-GKERLAOU" },
+              { libelle: "Adresse IP publique de l'expéditeur", reponse: "198.51.100.140" },
+              { libelle: "Heure d'envoi en UTC (hh:mm)", reponse: "19:46", accepte: ["19h46", "19 h 46"] }
+            ],
+            indices: [
+              "Propriétés du PDF : le champ `Author`.",
+              "Dans le courriel, le `Received` le plus bas commence par `from` suivi du nom que la machine s'est donné.",
+              "Heure UTC = heure de l'en-tête `Date` moins le décalage."
+            ],
+            solution: [
+              "Le communiqué (`Author: gkerlaouen`, créé avec LibreOffice le 25 juillet 2017 à 20 h 10) et le courriel (`from LAPTOP-GKERLAOU`, IP **198.51.100.140**, envoyé à 21 h 46 +0200 = **19 h 46 UTC**) viennent du même poste : le nom de machine Windows est tronqué à 15 caractères, `LAPTOP-` + `GKERLAOU`, soit le même identifiant **gkerlaouen**.",
+              "Conclusion rédigée : « Les deux pièces ont été préparées sur l'ordinateur portable d'un utilisateur `gkerlaouen` (confiance : forte, deux indices indépendants). L'identification de l'abonné derrière l'IP relève d'une réquisition judiciaire au fournisseur d'accès. » (Personnes et organisations fictives.)"
+            ]
+          }
+        ]
+      }
+
+    ]
+  };
+
+  cours.chapitres.push(ch2, ch3);
 
 })();
