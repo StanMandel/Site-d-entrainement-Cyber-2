@@ -14,7 +14,7 @@ CONTENU["assembleur"] = {
       id: "fiche-x86-64",
       titre: "Fiche technique x86-64",
       badge: "Fiche technique",
-      resume: "Registres, directives, instructions, traduction du C, accès mémoire, tableaux et structures en assembleur x86-64, syntaxe AT&T, chacun avec un exemple.",
+      resume: "Registres, directives, instructions, traduction du C, accès mémoire, tableaux, structures et fonctions en assembleur x86-64, syntaxe AT&T, chacun avec un exemple.",
       niveau: "Référence",
       sections: [
 
@@ -819,6 +819,180 @@ s:      .skip   24              # c:0  l:8  i:16  (4 octets vides à la fin)
             "Le déplacement d'un champ n'est pas la somme des tailles des champs précédents dès qu'un remplissage est inséré.",
             "Dans un tableau de structures, la taille totale est arrondie au multiple de l'alignement le plus grand (24 et non 20 ci-dessus)."
           ]
+        },
+
+        /* =====================================================
+           PARTIE 9 — FONCTIONS
+           ===================================================== */
+        {
+          type: "partie",
+          titre: "Fonctions"
+        },
+        {
+          titre: "pushq · popq",
+          texte: "`pushq src` pose 8 octets au sommet de la pile, `popq dest` les retire. `%rsp` contient l'adresse du sommet ; la pile grandit vers les adresses **basses**.",
+          tableau: {
+            entetes: ["Instruction", "Équivaut à"],
+            lignes: [
+              ["`pushq src`", "`subq $8, %rsp` puis `movq src, (%rsp)`"],
+              ["`popq dest`", "`movq (%rsp), dest` puis `addq $8, %rsp`"]
+            ]
+          },
+          legende: "Exemple",
+          code: "        pushq   %rbx            # rsp -= 8 ; (rsp) = rbx\n        pushq   $5              # rsp -= 8 ; (rsp) = 5\n        popq    %rax            # rax = 5 ; rsp += 8\n        popq    %rbx            # rbx retrouve sa valeur ; rsp += 8",
+          attention: [
+            "Dépiler dans l'ordre **inverse** de l'empilement.",
+            "Seule la taille `q` existe : `pushl` et `popl` sont refusés en x86-64."
+          ]
+        },
+        {
+          titre: "call · ret",
+          texte: "`call f` empile l'adresse de l'instruction suivante puis saute à `f`. `ret` dépile cette adresse et y saute.",
+          tableau: {
+            entetes: ["Instruction", "Équivaut à"],
+            lignes: [
+              ["`call f`", "`pushq %rip` puis `jmp f`"],
+              ["`ret`", "`popq %rip`"]
+            ]
+          },
+          legende: "Exemple",
+          code: "main:\n        movq    $-6, %rdi\n        call    labs            # empile l'adresse de retour, saute à labs\n        movq    %rax, x         # labs revient ici : x = 6\n\ndouble:\n        movq    %rdi, %rax\n        addq    %rax, %rax\n        ret                     # dépile l'adresse de retour et y saute",
+          remarque: "`%rip` ne s'écrit pas dans le code : seuls `call`, `ret` et les sauts le modifient.",
+          attention: [
+            "Au moment du `ret`, `%rsp` doit pointer sur l'adresse de retour : tout ce qui a été empilé doit avoir été retiré."
+          ]
+        },
+        {
+          titre: "Arguments et valeur de retour",
+          texte: "L'appelant range les 6 premiers arguments entiers ou adresses dans des registres, dans cet ordre. La fonction range son résultat dans `%rax`.",
+          tableau: {
+            entetes: ["Rôle", "64 bits (`long`, adresse)", "32 bits (`int`)"],
+            lignes: [
+              ["1ᵉʳ argument", "`%rdi`", "`%edi`"],
+              ["2ᵉ argument", "`%rsi`", "`%esi`"],
+              ["3ᵉ argument", "`%rdx`", "`%edx`"],
+              ["4ᵉ argument", "`%rcx`", "`%ecx`"],
+              ["5ᵉ argument", "`%r8`", "`%r8d`"],
+              ["6ᵉ argument", "`%r9`", "`%r9d`"],
+              ["7ᵉ, 8ᵉ… argument", "pile : `8(%rsp)`, `16(%rsp)`… à l'entrée", "idem"],
+              ["Valeur de retour", "`%rax`", "`%eax`"]
+            ]
+          },
+          codes: [
+            {
+              legende: "C",
+              code: `long r;
+r = absadd(3, -4);`
+            },
+            {
+              legende: "Appelant",
+              code: `        movq    $3, %rdi        # a = 3
+        movq    $-4, %rsi       # b = -4
+        call    absadd
+        movq    %rax, r         # r = valeur renvoyée`
+            }
+          ],
+          attention: [
+            "Un argument structure se passe sur la pile ; un résultat structure aussi.",
+            "Un résultat flottant revient dans un registre flottant, pas dans `%rax`."
+          ]
+        },
+        {
+          titre: "Registres à préserver",
+          texte: "Tous les registres sont partagés entre l'appelant et la fonction appelée. La convention dit qui doit sauvegarder quoi.",
+          tableau: {
+            entetes: ["Famille", "Registres", "Qui sauvegarde", "Comment"],
+            lignes: [
+              ["Callee-save", "`%rbx` `%rbp` `%r12` `%r13` `%r14` `%r15`", "la fonction **appelée**, si elle les utilise", "`pushq` au début, `popq` à la fin"],
+              ["Caller-save", "`%rdi` `%rsi` `%rdx` `%rcx` `%r8` `%r9` `%rax` `%r10` `%r11`", "l'**appelant**, s'il en a besoin après le `call`", "`pushq` avant le `call`, `popq` après"]
+            ]
+          },
+          codes: [
+            {
+              legende: "Callee-save",
+              code: `f:
+        pushq   %rbx            # f utilise rbx : sauvegarde
+        movq    %rdi, %rbx
+        ...
+        popq    %rbx            # restaure avant ret
+        ret`
+            },
+            {
+              legende: "Caller-save",
+              code: `        pushq   %rsi            # b sert encore après l'appel
+        call    labs            # labs peut écraser rsi
+        popq    %rsi            # b est revenu`
+            }
+          ],
+          attention: [
+            "Après un `call`, ne plus compter sur `%rdi` `%rsi` `%rdx` `%rcx` `%r8`–`%r11` ni sur `%rax` (qui contient le résultat).",
+            "Restaurer les callee-save dans l'ordre inverse : `push r13, r14, r15` → `pop r15, r14, r13`."
+          ]
+        },
+        {
+          titre: "Variables sur la pile",
+          texte: "Version non optimisée (`gcc` sans `-O`) : la fonction empile ses paramètres, réserve ses variables locales avec `subq`, les lit par déplacement **positif** depuis `%rsp`, puis libère tout avant `ret`.",
+          codes: [
+            {
+              legende: "C",
+              code: `long absadd(long a, long b)
+{
+    long absA, absB, sum;
+    absA = labs(a);
+    absB = labs(b);
+    sum = absA + absB;
+    return sum;
+}`
+            },
+            {
+              legende: "Assembleur",
+              code: `absadd:
+        pushq   %rdi            # a
+        pushq   %rsi            # b
+        subq    $24, %rsp       # absA, absB, sum
+                                # sum:0  absB:8  absA:16  b:24  a:32
+        movq    32(%rsp), %rdi
+        call    labs
+        movq    %rax, 16(%rsp)  # absA = labs(a)
+        movq    24(%rsp), %rdi
+        call    labs
+        movq    %rax, 8(%rsp)   # absB = labs(b)
+        movq    16(%rsp), %rax
+        addq    8(%rsp), %rax
+        movq    %rax, 0(%rsp)   # sum = absA + absB
+        movq    0(%rsp), %rax   # return sum
+        addq    $40, %rsp       # 2 paramètres + 3 locales
+        ret`
+            }
+          ],
+          attention: [
+            "Chaque `pushq` décale de 8 les déplacements de tout ce qui est déjà sur la pile : une variable à `X(%rsp)` est à `X+8(%rsp)` après un `pushq`.",
+            "Libérer exactement ce qui a été réservé : `addq` de la somme des `pushq` (×8) et du `subq`."
+          ]
+        },
+        {
+          titre: "Variables dans des registres",
+          texte: "Version optimisée (`gcc -O`) : paramètres gardés dans `%rdi` `%rsi`…, variables locales dans des registres callee-save.",
+          legende: "absadd optimisée",
+          code: `absadd:
+        pushq   %r13            # r13 = absA
+        pushq   %r14            # r14 = absB
+        pushq   %r15            # r15 = sum
+        pushq   %rsi            # b doit survivre à labs
+        call    labs            # a est déjà dans rdi
+        movq    %rax, %r13
+        popq    %rsi
+        movq    %rsi, %rdi
+        call    labs
+        movq    %rax, %r14
+        movq    %r13, %r15
+        addq    %r14, %r15
+        movq    %r15, %rax      # return sum
+        popq    %r15
+        popq    %r14
+        popq    %r13
+        ret`,
+          remarque: "Impossible si la fonction a plus de 6 variables locales, une variable tableau ou structure, ou si elle utilise l'adresse d'une variable (`&x`)."
         }
       ]
     }

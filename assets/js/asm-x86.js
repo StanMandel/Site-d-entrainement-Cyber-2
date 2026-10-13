@@ -14,12 +14,16 @@
      - and or xor not test, sal shl sar shr
      - cmp, jmp, j?? (signés et non signés), call, ret, leave, nop
      - opérandes $imm, %reg, étiquette, d(base,index,échelle)
+     - fonctions de bibliothèque appelables par call : labs, abs
+       (elles écrasent les registres caller-save, comme une vraie
+       fonction compilée)
 
    Utilisation :
      const prog = AsmX86.assembler(source);       // lève une erreur { ligne }
      const m = AsmX86.machine(prog);
      m.poser("x", 5);                             // entrée d'un test
      m.executer();                                // lève une erreur { ligne }
+     m.appeler("f", [7, 8]);   // avant executer : démarre à f, 7 et 8 sur la pile
      m.lireCle("%eax"); m.lireCle("tab[2]");      // résultats
    ============================================================= */
 
@@ -68,6 +72,16 @@
     REG["r" + k + "w"] = { i: k, t: 2 };
     REG["r" + k + "b"] = { i: k, t: 1 };
   }
+  /* Registres que toute fonction appelée peut modifier (sauf %rax, la valeur de retour). */
+  const CALLER_SAVE = ["rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11"].map((n) => REG[n]);
+  const ECRASE = 0x5ca1ab1edeadbeefn;   /* valeur laissée par une fonction de bibliothèque */
+
+  /* Fonctions de bibliothèque connues de call (argument dans %rdi / %edi). */
+  const BIBLIOTHEQUE = {
+    labs: (m) => { const x = signe(m.registres[5], 8); m.registres[0] = (x < 0n ? -x : x) & MASQUE[8]; },
+    abs: (m) => { const x = signe(m.registres[5] & MASQUE[4], 4); m.registres[0] = (x < 0n ? -x : x) & MASQUE[4]; }
+  };
+
   const regA = (t) => ({ i: 0, t });
   const regD = (t) => ({ i: 3, t });
   const REG_AH = REG.ah;
@@ -543,6 +557,11 @@
       if (cible.startsWith("*")) throw erreur("Les sauts indirects (*) ne sont pas pris en charge", ligne);
       if (!/^[A-Za-z_.][\w.$]*$/.test(cible)) throw erreur("« " + mn + " » attend un nom d'étiquette, pas « " + cible + " »", ligne);
       const sym = symboles.get(cible);
+      if (!sym && (mn === "call" || mn === "callq") && BIBLIOTHEQUE[cible]) {
+        const fonction = BIBLIOTHEQUE[cible];
+        ins.f = (m) => m.appelBibliotheque(fonction);
+        return ins;
+      }
       if (!sym) throw erreur("Étiquette inconnue : " + cible, ligne);
       if (sym.section !== "text") throw erreur("« " + cible + " » est une donnée : un saut doit viser une étiquette de .text", ligne);
       const destination = sym.decal;
@@ -935,6 +954,28 @@
       this.registres[I_RSP] = (this.registres[I_RSP] + 8n) & MASQUE[8];
       return v;
     }
+    /* Appel d'une fonction de bibliothèque : calcule %rax, puis laisse les
+       registres caller-save et la zone sous %rsp dans un état quelconque. */
+    appelBibliotheque(fonction) {
+      fonction(this);
+      for (const r of CALLER_SAVE) this.registres[r.i] = ECRASE;
+      const sommet = Number(this.registres[I_RSP]);
+      for (let a = Math.max(MEM_DEBUT, sommet - 64); a < sommet; a++) this.memoire[a] = 0x5a;
+    }
+
+    /* Démarre l'exécution à la fonction « nom » au lieu de main ; « pile »
+       liste les arguments 7, 8… posés au-dessus de l'adresse de retour. */
+    appeler(nom, pile) {
+      const sym = this.programme.symboles.get(nom);
+      if (!sym || sym.section !== "text") {
+        throw erreur("Fonction « " + nom + " » introuvable : écrire l'étiquette « " + nom + ": » dans .text");
+      }
+      this.depiler();
+      for (const v of [].concat(pile || []).reverse()) this.empiler(versBigInt(v) & MASQUE[8]);
+      this.empiler(RETOUR_FIN);
+      this.ip = sym.decal;
+    }
+
     retour() {
       const v = this.depiler();
       if (v === RETOUR_FIN) { this.fini = true; return; }
@@ -1106,6 +1147,7 @@
     versBigInt,
     MASQUE,
     NOMS64,
+    BIBLIOTHEQUE,
     REG
   };
 

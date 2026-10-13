@@ -101,7 +101,10 @@ sont numérotés `chapitre.rang` d'après leur ordre dans les données.
 - `verif-code.js` — `VerifCode` : applique les contraintes (`imposer`, `interdire`,
   `motifs`, `exclure`, `sections`, `aplati`) puis exécute chaque test (`entrees` →
   `attendu`). Les clés de test sont `%eax`, `x`, `t[2]`, `s+8:q` en assembleur et `x`,
-  `t[2]`, `p.x` en C.
+  `t[2]`, `p.x` en C. Avec `fonction: "nom"` (assembleur), chaque test appelle
+  l'étiquette `nom` (arguments `%rdi`…, `pile: [...]` pour le 7ᵉ et suivants) et
+  vérifie `ret` et la conservation de `%rbx` `%rbp` `%r12`–`%r15` ; `call labs` /
+  `call abs` sont des fonctions de bibliothèque qui écrasent les caller-save.
 
 Les erreurs levées pour l'utilisateur portent `erreurCode = true` et `ligne` ; les autres
 exceptions sont des bogues internes.

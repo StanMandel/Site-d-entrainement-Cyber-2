@@ -235,6 +235,11 @@ Le brouillon est gardé dans le navigateur.
   interdites), `sections` (section attendue d'une étiquette, par exemple
   `{ msg: "rodata" }`), `nonSigne` (clés affichées en non signé). Détails dans
   `data/cours/_modele.js`.
+- **Fonctions en assembleur :** avec `fonction: "nom"`, chaque test appelle
+  directement l'étiquette `nom` (arguments dans `"%rdi"`, `"%rsi"`… et `pile: [g, h]`
+  pour les arguments 7 et suivants ; résultat dans `"%rax"`). La fonction doit finir
+  par `ret` et rendre intacts `%rbx` `%rbp` `%r12`–`%r15`. `call labs` et `call abs`
+  appellent une fonction de bibliothèque qui écrase les registres caller-save.
 
 ### 4. Terminal — `type: "terminal"`
 
@@ -562,15 +567,17 @@ ne dépasse pas la taille de sa banque.
 - **Virtualisation et sécurité des conteneurs** — guide « Créer et lancer son
   premier conteneur » (10 étapes + 2 encadrés de notions) et QCM de révision du
   cours 1 (14 questions).
-- **Assembleur** — « Fiche technique x86-64 », cours *Assembly Language* Part 1 et
-  Part 2 : 8 parties, 36 fiches (registres, directives, instructions, contrôle de
-  flux, traduction du C, accès mémoire, tableaux, structures). Uniquement ce qui
-  s'écrit dans le code, sans théorie, chacune avec un exemple commenté.
-  72 exercices en 11 chapitres de difficulté croissante
+- **Assembleur** — « Fiche technique x86-64 », cours *Assembly Language* Part 1,
+  Part 2 et *Function Calls* : 9 parties, 42 fiches (registres, directives,
+  instructions, contrôle de flux, traduction du C, accès mémoire, tableaux,
+  structures, fonctions). Uniquement ce qui s'écrit dans le code, sans théorie,
+  chacune avec un exemple commenté.
+  88 exercices en 12 chapitres de difficulté croissante
   (`data/cours/assembleur-exercices.js`) : introduction (4 QCM et 4 exercices de code
   sur les sections, les noms des registres et la syntaxe), mov et variables, calculs, bits, C aplati,
-  conditions, boucles, tableaux, structures, puis traductions C → assembleur et
-  assembleur → C.
+  conditions, boucles, tableaux, structures, appels de fonctions (call / ret,
+  arguments, pile, caller-save et callee-save, versions non optimisée et optimisée,
+  récursivité), puis traductions C → assembleur et assembleur → C.
 - **Complexité algorithmique** — un guide de modèles de rédaction (preuves O/Ω/Θ,
   par l'absurde, boucles, meilleur/pire cas, récurrences) et 23 mini-cours à réponse
   saisie (`type: "probleme"`) en 4 chapitres : comptage d'opérations sur du code C (séquences, tests au pire cas,

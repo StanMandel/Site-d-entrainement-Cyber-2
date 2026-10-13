@@ -18,6 +18,10 @@
 
   const MAX_AFFICHES = 16;
 
+  /* Mode « fonction » : valeurs posées dans les registres callee-save avant
+     l'appel ; la fonction doit les rendre intactes. */
+  const CALLEE_SAVE = { "%rbx": 4242, "%rbp": 5353, "%r12": 1212, "%r13": 1313, "%r14": 1414, "%r15": 1515 };
+
   function verifier(exo, source) {
     const langage = exo.langage === "c" ? "c" : "asm";
     const tests = exo.tests || [];
@@ -132,9 +136,22 @@
     const bilan = { entrees: test.entrees || {}, lignes: [], ok: true, erreur: null, etat: [], sortie: "" };
     const machine = langage === "c" ? MiniC.machine(programme) : AsmX86.machine(programme);
 
+    const fonction = langage === "asm" && exo.fonction;
+    let conserves = null;
+
     try {
-      for (const [cle, valeur] of Object.entries(bilan.entrees)) machine.poser(cle, valeur);
+      if (fonction) for (const [cle, v] of Object.entries(CALLEE_SAVE)) machine.poser(cle, v);
+      for (const [cle, valeur] of Object.entries(bilan.entrees)) {
+        if (!(fonction && cle === "pile")) machine.poser(cle, valeur);
+      }
+      if (fonction) {
+        conserves = Object.keys(CALLEE_SAVE).map((cle) => ({ cle, v: machine.lireCle(cle) }));
+        machine.appeler(fonction, bilan.entrees.pile);
+      }
       machine.executer();
+      if (fonction && !machine.fini) {
+        throw Object.assign(new Error("La fonction « " + fonction + " » arrive à la fin du code sans exécuter ret"), { erreurCode: true });
+      }
     } catch (e) {
       if (!e.erreurCode) throw e;
       bilan.erreur = { ligne: e.ligne, message: e.message };
@@ -152,6 +169,19 @@
       }
       bilan.lignes.push(ligne);
       if (!ligne.ok) bilan.ok = false;
+    }
+
+    if (conserves && !bilan.erreur) {
+      const modifies = conserves.filter((c) => machine.lireCle(c.cle) !== c.v);
+      bilan.lignes.push({
+        cle: "%rbx %rbp %r12…%r15",
+        attendu: "inchangés",
+        obtenu: modifies.length
+          ? modifies.map((c) => c.cle + " = " + AsmX86.formater(machine.lireCle(c.cle), 8)).join(", ")
+          : "inchangés",
+        ok: modifies.length === 0
+      });
+      if (modifies.length) bilan.ok = false;
     }
 
     try {

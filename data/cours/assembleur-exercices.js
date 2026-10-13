@@ -6,7 +6,7 @@
    tests. Format documenté dans data/cours/_modele.js.
 
    Difficulté croissante : introduction (QCM + code) → mov → calculs → bits → C aplati →
-   conditions → boucles → tableaux → structures → traductions.
+   conditions → boucles → tableaux → structures → appels de fonctions → traductions.
    ============================================================= */
 
 CONTENU["assembleur"].chapitres = [
@@ -3247,6 +3247,863 @@ endloop1:
   },
 
   /* =========================================================
+     APPELS DE FONCTIONS
+     Les exercices « fonction » démarrent à l'étiquette indiquée,
+     arguments posés dans les registres (et « pile » au-dessus de
+     l'adresse de retour) ; %rbx %rbp %r12-%r15 doivent revenir
+     intacts. call labs / call abs appellent une fonction de
+     bibliothèque qui écrase les registres caller-save.
+     ========================================================= */
+  {
+    id: "asm-ch-fonctions",
+    titre: "Appels de fonctions",
+    description: "call et ret, arguments, valeur de retour, pile et registres à préserver.",
+    exercices: [
+      {
+        type: "qcm",
+        id: "fct-qcm-appel",
+        melangerChoix: true,
+        titre: "QCM — Appeler et revenir",
+        description: "call, ret, pushq, popq et la pile.",
+        cours: [
+          "Une fonction peut être appelée depuis plusieurs endroits, et les appels s'imbriquent : f appelle g qui appelle h. Les adresses de retour sont retirées dans l'ordre **inverse** de leur création : elles vont sur la **pile**.",
+          [
+            "`call f` empile l'adresse de l'instruction suivante, puis saute à `f`",
+            "`ret` dépile cette adresse et y saute",
+            "`%rsp` contient l'adresse du sommet de la pile ; la pile grandit vers les adresses basses"
+          ]
+        ],
+        exemple: {
+          legende: "f appelle g, g appelle h",
+          code: `f:      call    g               # empile « retour vers f »
+        ...
+g:      call    h               # empile « retour vers g »
+        ...
+        ret                     # dépile « retour vers f »
+h:      ...
+        ret                     # dépile « retour vers g »`
+        },
+        questions: [
+          {
+            enonce: "Pourquoi « jmp g » ne suffit-il pas pour appeler une fonction g ?",
+            choix: [
+              "g ne sait pas où revenir si plusieurs fonctions l'appellent",
+              "jmp ne peut pas viser une étiquette de .text",
+              "jmp modifie %rsp",
+              "jmp est plus lent que call"
+            ],
+            reponse: 0,
+            explication: "Avec « jmp fReturnPoint », g ne peut revenir que vers un seul appelant, écrit en dur."
+          },
+          {
+            enonce: "f range son adresse de retour dans %rax avant « jmp g », et g revient par « jmp *%rax ». Où est le problème ?",
+            choix: [
+              "Si g appelle h de la même façon, l'adresse de retour vers f est écrasée",
+              "%rax ne peut pas contenir une adresse",
+              "Il n'y en a aucun",
+              "g ne peut pas lire %rax"
+            ],
+            reponse: 0,
+            explication: "Un seul registre ne garde qu'une adresse : les appels imbriqués la perdent."
+          },
+          {
+            enonce: "Quelle structure convient pour ranger les adresses de retour ?",
+            choix: ["Une pile (dernier entré, premier sorti)", "Une file (premier entré, premier sorti)", "Un seul registre", "Une variable globale par fonction"],
+            reponse: 0,
+            explication: "La dernière adresse rangée est la première utilisée : c'est une pile (LIFO)."
+          },
+          {
+            enonce: "Que fait « call f » ?",
+            choix: [
+              "Empile l'adresse de l'instruction suivante, puis saute à f",
+              "Saute à f, puis empile %rip",
+              "Empile %rax, puis saute à f",
+              "Saute à f sans toucher à la pile"
+            ],
+            reponse: 0,
+            explication: "call f équivaut à « pushq %rip » puis « jmp f » : %rip contient déjà l'adresse de l'instruction suivante."
+          },
+          {
+            enonce: "Que fait « ret » ?",
+            choix: ["Dépile une adresse et y saute", "Revient à main", "Remet %rsp à sa valeur de départ", "Saute à l'instruction qui suit la dernière étiquette"],
+            reponse: 0,
+            explication: "ret équivaut à « popq %rip »."
+          },
+          {
+            enonce: "À quoi équivaut « pushq %rbx » ?",
+            choix: [
+              "subq $8, %rsp  puis  movq %rbx, (%rsp)",
+              "movq %rbx, (%rsp)  puis  subq $8, %rsp",
+              "addq $8, %rsp  puis  movq %rbx, (%rsp)",
+              "movq %rbx, %rsp"
+            ],
+            reponse: 0,
+            explication: "On fait d'abord de la place (la pile grandit vers le bas), puis on écrit au nouveau sommet."
+          },
+          {
+            enonce: "À quoi équivaut « popq %rax » ?",
+            choix: [
+              "movq (%rsp), %rax  puis  addq $8, %rsp",
+              "addq $8, %rsp  puis  movq (%rsp), %rax",
+              "movq (%rsp), %rax  puis  subq $8, %rsp",
+              "movq %rsp, %rax"
+            ],
+            reponse: 0,
+            explication: "On lit le sommet, puis on le libère en remontant %rsp."
+          },
+          {
+            enonce: "%rsp vaut 1000 juste avant « call f ». Que vaut-il à la première instruction de f ?",
+            choix: ["992", "1008", "1000", "996"],
+            reponse: 0,
+            explication: "call empile l'adresse de retour : 8 octets, %rsp descend à 992."
+          },
+          {
+            enonce: "Que contient (%rsp) à la première instruction d'une fonction ?",
+            choix: ["L'adresse de retour", "Le premier argument", "La valeur de retour", "0"],
+            reponse: 0,
+            explication: "C'est ce que call vient d'empiler, et ce que ret dépilera."
+          },
+          {
+            enonce: "Que vaut %rax à la fin ?",
+            code: `        pushq   $1
+        pushq   $2
+        pushq   $3
+        popq    %rax
+        popq    %rax`,
+            choix: ["2", "1", "3", "6"],
+            reponse: 0,
+            explication: "Le premier popq retire 3, le second retire 2."
+          },
+          {
+            enonce: "Que se passe-t-il au ret ?",
+            code: `f:
+        pushq   %rbx
+        movq    %rdi, %rbx
+        addq    %rbx, %rbx
+        movq    %rbx, %rax
+        ret`,
+            choix: [
+              "ret saute à l'adresse contenue dans l'ancien %rbx, pas chez l'appelant",
+              "f revient normalement chez l'appelant",
+              "ret dépile deux valeurs",
+              "L'assembleur refuse le code"
+            ],
+            reponse: 0,
+            explication: "Le sommet de la pile est l'ancien %rbx, pas l'adresse de retour : il manque « popq %rbx » avant ret."
+          },
+          {
+            enonce: "f appelle g, puis g appelle h. Quelle adresse de retour est retirée de la pile en premier ?",
+            choix: ["Celle de h vers g", "Celle de g vers f", "Les deux en même temps", "Aucune : ret ne retire rien"],
+            reponse: 0,
+            explication: "Dernière créée, première détruite : h revient vers g avant que g ne revienne vers f."
+          },
+          {
+            enonce: "Quelles instructions modifient %rsp ?",
+            choix: ["pushq", "call", "jmp", "ret"],
+            reponse: [0, 1, 3],
+            explication: "pushq et call empilent, ret dépile ; jmp ne touche qu'à %rip."
+          }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-pile-echange",
+        titre: "Échanger par la pile",
+        description: "pushq et popq : dernier entré, premier sorti.",
+        cours: "`pushq src` pose 8 octets au sommet de la pile, `popq dest` retire **le dernier posé**. La source et la destination peuvent être un registre ou une variable `.quad`.",
+        exemple: {
+          code: `        pushq   $1
+        pushq   $2
+        popq    %rax            # rax = 2
+        popq    %rbx            # rbx = 1`
+        },
+        consigne: "Échanger le contenu des variables `x` et `y` en n'utilisant que `pushq` et `popq`.",
+        depart: `        .section ".data"
+x:      .quad   5
+y:      .quad   -8
+
+        .section ".text"
+main:
+        # échanger x et y
+`,
+        solution: `        .section ".data"
+x:      .quad   5
+y:      .quad   -8
+
+        .section ".text"
+main:
+        pushq   x
+        pushq   y
+        popq    x               # x = ancien y
+        popq    y               # y = ancien x
+`,
+        tests: [
+          { entrees: { x: 5, y: -8 }, attendu: { x: -8, y: 5 } },
+          { entrees: { x: "123456789012", y: 0 }, attendu: { x: 0, y: "123456789012" } },
+          { entrees: { x: -1, y: 42 }, attendu: { x: 42, y: -1 } }
+        ],
+        imposer: ["push", "pop"],
+        interdire: ["mov", "xchg"]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-premiere",
+        titre: "Première fonction",
+        description: "Arguments dans %rdi et %rsi, résultat dans %rax, puis ret.",
+        cours: [
+          "Une fonction est une étiquette de `.text`. Elle trouve ses arguments dans des registres et laisse son résultat dans `%rax` :",
+          [
+            "1ᵉʳ argument : `%rdi`",
+            "2ᵉ argument : `%rsi`",
+            "valeur de retour : `%rax`"
+          ],
+          "Elle se termine par `ret`, qui revient chez l'appelant."
+        ],
+        exemple: {
+          legende: "long double_de(long x) { return x + x; }",
+          code: `double_de:
+        movq    %rdi, %rax      # rax = x
+        addq    %rax, %rax      # rax = x + x
+        ret`
+        },
+        consigne: "Écrire la fonction `long perimetre(long largeur, long hauteur)` qui renvoie `2 * (largeur + hauteur)`.",
+        fonction: "perimetre",
+        depart: `        .section ".text"
+perimetre:
+        # long perimetre(long largeur, long hauteur)
+        # largeur dans %rdi, hauteur dans %rsi, résultat dans %rax
+`,
+        solution: `        .section ".text"
+perimetre:
+        movq    %rdi, %rax      # rax = largeur
+        addq    %rsi, %rax      # rax = largeur + hauteur
+        addq    %rax, %rax      # rax = 2 * (largeur + hauteur)
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": 4 }, attendu: { "%rax": 14 } },
+          { entrees: { "%rdi": 10, "%rsi": 0 }, attendu: { "%rax": 20 } },
+          { entrees: { "%rdi": -5, "%rsi": 12 }, attendu: { "%rax": 14 } },
+          { entrees: { "%rdi": "3000000000", "%rsi": 1 }, attendu: { "%rax": "6000000002" } }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-six-arguments",
+        titre: "Six arguments",
+        description: "%rdi, %rsi, %rdx, %rcx, %r8, %r9 dans cet ordre.",
+        cours: [
+          "Les six premiers arguments entiers ou adresses arrivent toujours dans le même ordre :",
+          {
+            entetes: ["Argument", "1", "2", "3", "4", "5", "6"],
+            lignes: [["Registre", "`%rdi`", "`%rsi`", "`%rdx`", "`%rcx`", "`%r8`", "`%r9`"]]
+          }
+        ],
+        exemple: {
+          legende: "long f(long a, long b, long c, long d) { return d - c; }",
+          code: `f:
+        movq    %rcx, %rax      # rax = d
+        subq    %rdx, %rax      # rax = d - c
+        ret`
+        },
+        consigne: "Écrire `long alterne(long a, long b, long c, long d, long e, long f)` qui renvoie `a - b + c - d + e - f`.",
+        fonction: "alterne",
+        depart: `        .section ".text"
+alterne:
+        # long alterne(long a, long b, long c, long d, long e, long f)
+        ret
+`,
+        solution: `        .section ".text"
+alterne:
+        movq    %rdi, %rax      # a
+        subq    %rsi, %rax      # - b
+        addq    %rdx, %rax      # + c
+        subq    %rcx, %rax      # - d
+        addq    %r8, %rax       # + e
+        subq    %r9, %rax       # - f
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 1, "%rsi": 2, "%rdx": 3, "%rcx": 4, "%r8": 5, "%r9": 6 }, attendu: { "%rax": -3 } },
+          { entrees: { "%rdi": 100, "%rsi": 20, "%rdx": 3, "%rcx": 0, "%r8": 0, "%r9": 0 }, attendu: { "%rax": 83 } },
+          { entrees: { "%rdi": 0, "%rsi": 0, "%rdx": 0, "%rcx": 4, "%r8": 50, "%r9": 600 }, attendu: { "%rax": -554 } }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-int",
+        titre: "Arguments int",
+        description: "%edi, %esi… et %eax pour 4 octets.",
+        cours: "Pour un argument `int`, on utilise la moitié basse du même registre : `%edi`, `%esi`, `%edx`, `%ecx`, `%r8d`, `%r9d`. Un résultat `int` se range dans `%eax`.",
+        exemple: {
+          legende: "int moins(int a, int b) { return a - b; }",
+          code: `moins:
+        movl    %edi, %eax      # eax = a
+        subl    %esi, %eax      # eax = a - b
+        ret`
+        },
+        consigne: "Écrire `int reste(int a, int b)` qui renvoie `a % b`.",
+        fonction: "reste",
+        depart: `        .section ".text"
+reste:
+        # int reste(int a, int b)
+        ret
+`,
+        solution: `        .section ".text"
+reste:
+        movl    %edi, %eax      # eax = a
+        cltd                    # edx:eax = a
+        idivl   %esi            # eax = a / b, edx = a % b
+        movl    %edx, %eax      # renvoie le reste
+        ret
+`,
+        tests: [
+          { entrees: { "%edi": 17, "%esi": 5 }, attendu: { "%eax": 2 } },
+          { entrees: { "%edi": -17, "%esi": 5 }, attendu: { "%eax": -2 } },
+          { entrees: { "%edi": 100, "%esi": 7 }, attendu: { "%eax": 2 } },
+          { entrees: { "%edi": 6, "%esi": 3 }, attendu: { "%eax": 0 } }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-septieme",
+        titre: "Au-delà de six arguments",
+        description: "Les arguments 7, 8… sont sur la pile, au-dessus de l'adresse de retour.",
+        cours: "À partir du 7ᵉ, les arguments sont posés sur la pile par l'appelant. À l'entrée de la fonction, `0(%rsp)` contient l'adresse de retour ; le 7ᵉ argument est à `8(%rsp)`, le 8ᵉ à `16(%rsp)`…",
+        exemple: {
+          legende: "long f(long a, long b, long c, long d, long e, long f, long g) { return g; }",
+          code: `f:
+        movq    8(%rsp), %rax   # rax = g (7ᵉ argument)
+        ret`
+        },
+        consigne: "Écrire `long dernier(long a, long b, long c, long d, long e, long f, long g, long h)` qui renvoie `a + g - h`.",
+        fonction: "dernier",
+        depart: `        .section ".text"
+dernier:
+        # long dernier(long a, long b, long c, long d,
+        #              long e, long f, long g, long h)
+        ret
+`,
+        solution: `        .section ".text"
+dernier:
+        movq    %rdi, %rax      # a
+        addq    8(%rsp), %rax   # + g
+        subq    16(%rsp), %rax  # - h
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 100, "%rsi": 1, "%rdx": 2, "%rcx": 3, "%r8": 4, "%r9": 5, pile: [7, 2] }, attendu: { "%rax": 105 } },
+          { entrees: { "%rdi": -1, "%rsi": 0, "%rdx": 0, "%rcx": 0, "%r8": 0, "%r9": 0, pile: [0, 9] }, attendu: { "%rax": -10 } },
+          { entrees: { "%rdi": 0, "%rsi": 6, "%rdx": 6, "%rcx": 6, "%r8": 6, "%r9": 6, pile: [50, -50] }, attendu: { "%rax": 100 } }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-appeler",
+        titre: "Appeler une fonction",
+        description: "Préparer %rdi, call, lire %rax.",
+        cours: "Pour appeler une fonction : ranger ses arguments dans `%rdi`, `%rsi`…, exécuter `call`, puis lire son résultat dans `%rax`. La fonction de la bibliothèque C `long labs(long x)` renvoie la valeur absolue de `x`.",
+        exemple: {
+          legende: "r = labs(x);",
+          code: `        movq    x, %rdi         # argument
+        call    labs
+        movq    %rax, r         # résultat`
+        },
+        consigne: "Écrire `long distance(long a, long b)` qui renvoie `labs(a - b)`, en appelant `labs`.",
+        fonction: "distance",
+        depart: `        .section ".text"
+distance:
+        # long distance(long a, long b)
+        ret
+`,
+        solution: `        .section ".text"
+distance:
+        subq    %rsi, %rdi      # rdi = a - b : argument de labs
+        call    labs            # rax = labs(a - b)
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": 10 }, attendu: { "%rax": 7 } },
+          { entrees: { "%rdi": 10, "%rsi": 3 }, attendu: { "%rax": 7 } },
+          { entrees: { "%rdi": -4, "%rsi": -4 }, attendu: { "%rax": 0 } },
+          { entrees: { "%rdi": -5, "%rsi": 6 }, attendu: { "%rax": 11 } }
+        ],
+        motifs: [{ motif: "call\\s+labs\\b", message: "Appeler labs avec call", regle: "Appeler `labs`." }]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-caller-save",
+        titre: "Survivre à un appel",
+        description: "Sauvegarder les registres caller-save autour d'un call.",
+        cours: [
+          "Une fonction appelée peut modifier librement les registres **caller-save** : `%rdi` `%rsi` `%rdx` `%rcx` `%r8` `%r9` `%r10` `%r11` et `%rax`.",
+          "Si l'appelant a encore besoin d'une valeur après le `call`, il l'empile avant et la dépile après."
+        ],
+        exemple: {
+          legende: "b doit survivre à labs(a)",
+          code: `        pushq   %rsi            # sauvegarde b
+        call    labs            # peut écraser rsi
+        popq    %rsi            # b est revenu`
+        },
+        consigne: [
+          "Ce code de `long absadd(long a, long b)`, qui renvoie `labs(a) + labs(b)`, perd des valeurs pendant les appels à `labs`.",
+          "Le corriger en sauvegardant sur la pile ce qui doit survivre à chaque appel."
+        ],
+        fonction: "absadd",
+        depart: `        .section ".text"
+absadd:
+        call    labs            # rax = labs(a)
+        movq    %rax, %rcx      # rcx = labs(a)
+        movq    %rsi, %rdi
+        call    labs            # rax = labs(b)
+        addq    %rcx, %rax      # labs(a) + labs(b)
+        ret
+`,
+        solution: `        .section ".text"
+absadd:
+        pushq   %rsi            # b doit survivre au 1er appel
+        call    labs            # rax = labs(a)
+        popq    %rsi
+        pushq   %rax            # labs(a) doit survivre au 2e appel
+        movq    %rsi, %rdi
+        call    labs            # rax = labs(b)
+        popq    %rcx            # rcx = labs(a)
+        addq    %rcx, %rax
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": -4 }, attendu: { "%rax": 7 } },
+          { entrees: { "%rdi": -10, "%rsi": -5 }, attendu: { "%rax": 15 } },
+          { entrees: { "%rdi": 0, "%rsi": 8 }, attendu: { "%rax": 8 } },
+          { entrees: { "%rdi": -6, "%rsi": 0 }, attendu: { "%rax": 6 } }
+        ],
+        exclure: [{
+          motif: "%(rbx|rbp|r12|r13|r14|r15)\\b",
+          message: "Ici, sauvegarder avec pushq / popq autour des appels, sans registre callee-save",
+          regle: "Pas de registre callee-save."
+        }]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-callee-save",
+        titre: "Rendre les registres",
+        description: "Une fonction qui utilise %rbx, %r12… doit les restaurer.",
+        cours: [
+          "Les registres **callee-save** `%rbx` `%rbp` `%r12` `%r13` `%r14` `%r15` appartiennent à l'appelant : il compte les retrouver intacts après le `call`.",
+          "Une fonction qui veut les utiliser les empile au début et les dépile à la fin, dans l'ordre inverse."
+        ],
+        exemple: {
+          code: `f:
+        pushq   %rbx
+        pushq   %r12
+        ...                     # rbx et r12 sont libres
+        popq    %r12
+        popq    %rbx
+        ret`
+        },
+        consigne: "Cette fonction `long somme_carres(long a, long b)` calcule bien `a * a + b * b`, mais détruit des registres de l'appelant. La corriger.",
+        fonction: "somme_carres",
+        depart: `        .section ".text"
+somme_carres:
+        movq    %rdi, %rbx
+        imulq   %rbx, %rbx      # rbx = a * a
+        movq    %rsi, %r12
+        imulq   %r12, %r12      # r12 = b * b
+        movq    %rbx, %rax
+        addq    %r12, %rax
+        ret
+`,
+        solution: `        .section ".text"
+somme_carres:
+        pushq   %rbx
+        pushq   %r12
+        movq    %rdi, %rbx
+        imulq   %rbx, %rbx      # rbx = a * a
+        movq    %rsi, %r12
+        imulq   %r12, %r12      # r12 = b * b
+        movq    %rbx, %rax
+        addq    %r12, %rax
+        popq    %r12
+        popq    %rbx
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": 4 }, attendu: { "%rax": 25 } },
+          { entrees: { "%rdi": -2, "%rsi": 0 }, attendu: { "%rax": 4 } },
+          { entrees: { "%rdi": 5, "%rsi": -5 }, attendu: { "%rax": 50 } }
+        ]
+      },
+      {
+        type: "qcm",
+        id: "fct-qcm-conventions",
+        melangerChoix: true,
+        titre: "QCM — Conventions d'appel",
+        description: "Arguments, retour, caller-save et callee-save.",
+        cours: [
+          "Arguments : `%rdi` `%rsi` `%rdx` `%rcx` `%r8` `%r9`, puis la pile. Retour : `%rax`.",
+          {
+            entetes: ["Famille", "Registres", "Sauvegardés par"],
+            lignes: [
+              ["Callee-save", "`%rbx` `%rbp` `%r12`–`%r15`", "la fonction appelée, si elle les utilise"],
+              ["Caller-save", "`%rdi` `%rsi` `%rdx` `%rcx` `%r8`–`%r11` `%rax`", "l'appelant, s'il en a besoin après le `call`"]
+            ]
+          }
+        ],
+        questions: [
+          {
+            enonce: "Dans quel registre arrive le 3ᵉ argument d'une fonction ?",
+            choix: ["%rdx", "%rcx", "%rsi", "%r8"],
+            reponse: 0,
+            explication: "Ordre : %rdi, %rsi, %rdx, %rcx, %r8, %r9."
+          },
+          {
+            enonce: "Dans quel registre arrive le 5ᵉ argument ?",
+            choix: ["%r8", "%r9", "%rcx", "%rbx"],
+            reponse: 0,
+            explication: "%rdi, %rsi, %rdx, %rcx, puis %r8 et %r9."
+          },
+          {
+            enonce: "Où se trouve le 7ᵉ argument à la première instruction de la fonction ?",
+            choix: ["8(%rsp)", "0(%rsp)", "%r10", "-8(%rsp)"],
+            reponse: 0,
+            explication: "0(%rsp) est l'adresse de retour empilée par call ; le 7ᵉ argument est juste au-dessus."
+          },
+          {
+            enonce: "Où une fonction « int f(…) » range-t-elle sa valeur de retour ?",
+            choix: ["%eax", "%edi", "Sur la pile", "%ebx"],
+            reponse: 0,
+            explication: "Entier ou adresse : %rax, ou %eax sur 4 octets."
+          },
+          {
+            enonce: "Comment une structure est-elle renvoyée ?",
+            choix: ["Sur la pile", "Dans %rax", "Dans un registre flottant", "Dans %rdi"],
+            reponse: 0,
+            explication: "Seuls les entiers et adresses reviennent dans %rax ; les flottants dans un registre flottant, les structures sur la pile."
+          },
+          {
+            enonce: "Quels registres sont callee-save ?",
+            choix: ["%rbx", "%rdi", "%r12", "%r10"],
+            reponse: [0, 2],
+            explication: "Callee-save : %rbx, %rbp, %r12 à %r15."
+          },
+          {
+            enonce: "Juste après « call labs », sur quel registre l'appelant peut-il compter sans l'avoir sauvegardé ?",
+            choix: ["%r13", "%rsi", "%rcx", "%r11"],
+            reponse: 0,
+            explication: "%r13 est callee-save : labs doit le rendre intact."
+          },
+          {
+            enonce: "Une fonction veut garder une variable dans %r14. Que doit-elle faire ?",
+            choix: [
+              "pushq %r14 au début, popq %r14 juste avant ret",
+              "Rien : %r14 est libre",
+              "Demander à l'appelant de sauvegarder %r14",
+              "Remettre %r14 à 0 avant ret"
+            ],
+            reponse: 0,
+            explication: "%r14 est callee-save : sa valeur d'origine doit être rendue."
+          },
+          {
+            enonce: "Quel est le problème ?",
+            code: `f:
+        pushq   %r13
+        pushq   %r14
+        ...
+        popq    %r13
+        popq    %r14
+        ret`,
+            choix: [
+              "%r13 et %r14 sont échangés à la sortie",
+              "Aucun",
+              "Il faut popq avant pushq",
+              "ret ne trouvera pas l'adresse de retour"
+            ],
+            reponse: 0,
+            explication: "Le premier popq récupère la dernière valeur empilée (r14) : il faut popq %r14 puis popq %r13."
+          },
+          {
+            enonce: "Dans la version optimisée d'absadd, pourquoi « pushq %rsi » avant « call labs » ?",
+            choix: [
+              "labs peut modifier %rsi, qui contient encore b",
+              "Pour passer b à labs",
+              "Parce que %rsi est callee-save",
+              "Pour aligner la pile"
+            ],
+            reponse: 0,
+            explication: "%rsi est caller-save : c'est à l'appelant de le sauvegarder s'il en a besoin après l'appel."
+          },
+          {
+            enonce: "Quel modèle gcc utilise-t-il sans l'option -O ?",
+            choix: [
+              "Paramètres et variables locales sur la pile",
+              "Paramètres et variables locales dans des registres",
+              "Variables locales dans .data",
+              "Paramètres dans .bss"
+            ],
+            reponse: 0,
+            explication: "Modèle non optimisé : toujours possible, mais chaque accès passe par la mémoire."
+          },
+          {
+            enonce: "Dans quels cas une variable locale ne peut-elle pas rester dans un registre ?",
+            choix: [
+              "C'est un tableau ou une structure",
+              "La fonction utilise son adresse (&x)",
+              "La fonction a plus de 6 variables locales",
+              "La fonction appelle une autre fonction"
+            ],
+            reponse: [0, 1, 2],
+            explication: "Un appel ne l'empêche pas : il suffit d'utiliser un registre callee-save."
+          },
+          {
+            enonce: "Une variable locale est à 16(%rsp). Où est-elle après « pushq %rsi » ?",
+            choix: ["24(%rsp)", "8(%rsp)", "16(%rsp)", "0(%rsp)"],
+            reponse: 0,
+            explication: "pushq fait descendre %rsp de 8 : le déplacement de tout ce qui est déjà sur la pile augmente de 8."
+          },
+          {
+            enonce: "absadd non optimisée commence par « pushq %rdi ; pushq %rsi ; subq $24, %rsp ». Où est a ?",
+            choix: ["32(%rsp)", "24(%rsp)", "0(%rsp)", "40(%rsp)"],
+            reponse: 0,
+            explication: "24 octets de locales, puis b à 24, puis a à 32 (l'adresse de retour est à 40)."
+          }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-locales-pile",
+        titre: "Version non optimisée",
+        description: "Paramètres et variables locales sur la pile.",
+        cours: [
+          "Sans optimisation, la fonction :",
+          [
+            "empile ses paramètres au début",
+            "réserve ses variables locales avec `subq $taille, %rsp`",
+            "y accède par déplacement positif depuis `%rsp`",
+            "libère tout avec `addq` avant `ret`"
+          ]
+        ],
+        exemple: {
+          legende: "long f(long a) { long x; x = labs(a); return x + a; }",
+          code: `f:
+        pushq   %rdi            # a
+        subq    $8, %rsp        # x      x:0  a:8
+        movq    8(%rsp), %rdi
+        call    labs
+        movq    %rax, 0(%rsp)   # x = labs(a)
+        movq    0(%rsp), %rax
+        addq    8(%rsp), %rax   # return x + a
+        addq    $16, %rsp
+        ret`
+        },
+        consigne: [
+          "Écrire en version non optimisée :",
+          [
+            "`x`, `y`, `z` empilés dans cet ordre",
+            "`ax`, `ay`, `az` réservés avec `subq $24, %rsp` : `az` à `0(%rsp)`, `ay` à `8(%rsp)`, `ax` à `16(%rsp)`"
+          ]
+        ],
+        aTraduire: {
+          legende: "C",
+          code: `long norme1(long x, long y, long z)
+{
+    long ax, ay, az;
+    ax = labs(x);
+    ay = labs(y);
+    az = labs(z);
+    return ax + ay + az;
+}`
+        },
+        fonction: "norme1",
+        depart: `        .section ".text"
+norme1:
+        # paramètres et variables locales sur la pile
+
+        ret
+`,
+        solution: `        .section ".text"
+norme1:
+        pushq   %rdi            # x
+        pushq   %rsi            # y
+        pushq   %rdx            # z
+        subq    $24, %rsp       # az:0  ay:8  ax:16  z:24  y:32  x:40
+        movq    40(%rsp), %rdi
+        call    labs
+        movq    %rax, 16(%rsp)  # ax = labs(x)
+        movq    32(%rsp), %rdi
+        call    labs
+        movq    %rax, 8(%rsp)   # ay = labs(y)
+        movq    24(%rsp), %rdi
+        call    labs
+        movq    %rax, 0(%rsp)   # az = labs(z)
+        movq    16(%rsp), %rax
+        addq    8(%rsp), %rax
+        addq    0(%rsp), %rax   # return ax + ay + az
+        addq    $48, %rsp
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": -4, "%rdx": 5 }, attendu: { "%rax": 12 } },
+          { entrees: { "%rdi": -1, "%rsi": -1, "%rdx": -1 }, attendu: { "%rax": 3 } },
+          { entrees: { "%rdi": 0, "%rsi": 10, "%rdx": -20 }, attendu: { "%rax": 30 } },
+          { entrees: { "%rdi": 7, "%rsi": 0, "%rdx": 0 }, attendu: { "%rax": 7 } }
+        ],
+        motifs: [
+          { motif: "subq\\s+\\$24\\s*,\\s*%rsp", message: "Réserver les variables locales avec subq $24, %rsp", regle: "Variables locales réservées avec `subq $24, %rsp`." },
+          { motif: "\\d+\\(%rsp\\)", message: "Lire et écrire les variables par déplacement depuis %rsp", regle: "Accès par `déplacement(%rsp)`." }
+        ],
+        exclure: [{
+          motif: "%(rbx|rbp|r12|r13|r14|r15)\\b",
+          message: "Version non optimisée : pas de registre callee-save, tout passe par la pile",
+          regle: "Pas de registre callee-save."
+        }]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-optimisee",
+        titre: "Version optimisée",
+        description: "Variables dans des registres callee-save.",
+        cours: [
+          "Avec optimisation, les variables restent dans des registres. Celles qui doivent survivre à un `call` vont dans des registres **callee-save** : la fonction appelée ne les abîme pas.",
+          "En échange, la fonction les empile au début et les restaure à la fin."
+        ],
+        exemple: {
+          legende: "long f(long a) { return labs(a) + a; }",
+          code: `f:
+        pushq   %rbx
+        movq    %rdi, %rbx      # a survit à labs dans rbx
+        call    labs
+        addq    %rbx, %rax
+        popq    %rbx
+        ret`
+        },
+        consigne: "Réécrire `norme1` sans aucun accès à la mémoire de la pile (`d(%rsp)`) : seulement des registres, et `pushq` / `popq` de registres callee-save.",
+        aTraduire: {
+          legende: "C",
+          code: `long norme1(long x, long y, long z)
+{
+    long ax, ay, az;
+    ax = labs(x);
+    ay = labs(y);
+    az = labs(z);
+    return ax + ay + az;
+}`
+        },
+        fonction: "norme1",
+        depart: `        .section ".text"
+norme1:
+        # version optimisée : registres callee-save
+
+        ret
+`,
+        solution: `        .section ".text"
+norme1:
+        pushq   %rbx
+        pushq   %r12
+        pushq   %r13
+        movq    %rsi, %r12      # y survit aux appels
+        movq    %rdx, %r13      # z aussi
+        call    labs
+        movq    %rax, %rbx      # rbx = labs(x)
+        movq    %r12, %rdi
+        call    labs
+        addq    %rax, %rbx      # + labs(y)
+        movq    %r13, %rdi
+        call    labs
+        addq    %rbx, %rax      # + labs(z)
+        popq    %r13
+        popq    %r12
+        popq    %rbx
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 3, "%rsi": -4, "%rdx": 5 }, attendu: { "%rax": 12 } },
+          { entrees: { "%rdi": -1, "%rsi": -1, "%rdx": -1 }, attendu: { "%rax": 3 } },
+          { entrees: { "%rdi": 0, "%rsi": 10, "%rdx": -20 }, attendu: { "%rax": 30 } },
+          { entrees: { "%rdi": 7, "%rsi": 0, "%rdx": 0 }, attendu: { "%rax": 7 } }
+        ],
+        motifs: [{ motif: "%(rbx|rbp|r12|r13|r14|r15)\\b", message: "Garder les valeurs dans des registres callee-save", regle: "Valeurs gardées dans des registres callee-save." }],
+        exclure: [
+          { motif: "\\(%rsp\\)", message: "Version optimisée : pas d'accès d(%rsp)", regle: "Aucun accès `d(%rsp)`." },
+          { motif: "(push|pop)q?\\s+%(rax|rdi|rsi|rdx|rcx|r8|r9|r10|r11)\\b", message: "Version optimisée : pas de sauvegarde caller-save, utiliser des registres callee-save", regle: "Pas de `pushq` de registre caller-save." }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "fct-recursive",
+        titre: "Fonction récursive",
+        description: "Une fonction qui s'appelle elle-même.",
+        cours: "Une fonction récursive est une fonction comme une autre : chaque appel empile sa propre adresse de retour. Ce qui doit survivre à l'appel récursif va dans un registre callee-save, sauvegardé à l'entrée.",
+        exemple: {
+          legende: "long somme(long n) { if (n <= 0) return 0; return n + somme(n - 1); }",
+          code: `somme:
+        cmpq    $0, %rdi
+        jg      rec
+        movq    $0, %rax
+        ret
+rec:
+        pushq   %rbx
+        movq    %rdi, %rbx      # n survit à l'appel
+        decq    %rdi
+        call    somme           # rax = somme(n - 1)
+        addq    %rbx, %rax
+        popq    %rbx
+        ret`
+        },
+        consigne: "Écrire la fonction récursive `long fact(long n)`.",
+        aTraduire: {
+          legende: "C",
+          code: `long fact(long n)
+{
+    if (n <= 1)
+        return 1;
+    return n * fact(n - 1);
+}`
+        },
+        fonction: "fact",
+        depart: `        .section ".text"
+fact:
+        # long fact(long n)
+        ret
+`,
+        solution: `        .section ".text"
+fact:
+        cmpq    $1, %rdi
+        jg      recursion
+        movq    $1, %rax        # n <= 1 : return 1
+        ret
+recursion:
+        pushq   %rbx
+        movq    %rdi, %rbx      # n survit à l'appel
+        decq    %rdi
+        call    fact            # rax = fact(n - 1)
+        imulq   %rbx, %rax      # n * fact(n - 1)
+        popq    %rbx
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 0 }, attendu: { "%rax": 1 } },
+          { entrees: { "%rdi": 1 }, attendu: { "%rax": 1 } },
+          { entrees: { "%rdi": 5 }, attendu: { "%rax": 120 } },
+          { entrees: { "%rdi": 10 }, attendu: { "%rax": 3628800 } },
+          { entrees: { "%rdi": 20 }, attendu: { "%rax": "2432902008176640000" } }
+        ],
+        motifs: [{ motif: "call\\s+fact\\b", message: "fact doit s'appeler elle-même (call fact)", regle: "Appel récursif `call fact`." }]
+      }
+    ]
+  },
+
+  /* =========================================================
      CHAPITRE 9 — TRADUIRE DU C EN ASSEMBLEUR
      ========================================================= */
   {
@@ -3638,6 +4495,134 @@ endif1:
           { entrees: { "e+4:l": 10, "e+8:q": 0 }, attendu: { "e:b": "A", "e+8:q": 10 } },
           { entrees: { "e+4:l": -3, "e+8:q": "4294967296" }, attendu: { "e:b": "B", "e+8:q": "4294967293" } }
         ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "trad-fonction",
+        titre: "Une fonction à plusieurs return",
+        description: "Chaque return range %rax puis exécute ret.",
+        cours: "Les paramètres sont dans `%rdi`, `%rsi`, `%rdx`… Chaque `return` du C devient : valeur dans `%rax`, puis `ret`. Une fonction peut contenir plusieurs `ret`.",
+        exemple: {
+          legende: "long signe(long x) { if (x < 0) return -1; return 1; }",
+          code: `signe:
+        cmpq    $0, %rdi
+        jge     positif
+        movq    $-1, %rax
+        ret
+positif:
+        movq    $1, %rax
+        ret`
+        },
+        consigne: "Traduire cette fonction en assembleur :",
+        aTraduire: {
+          legende: "C",
+          code: `long borner(long x, long min, long max)
+{
+    if (x < min)
+        return min;
+    if (x > max)
+        return max;
+    return x;
+}`
+        },
+        fonction: "borner",
+        depart: `        .section ".text"
+borner:
+        # traduction
+        ret
+`,
+        solution: `        .section ".text"
+borner:
+        cmpq    %rsi, %rdi
+        jge     pasTropPetit
+        movq    %rsi, %rax      # return min
+        ret
+pasTropPetit:
+        cmpq    %rdx, %rdi
+        jle     pasTropGrand
+        movq    %rdx, %rax      # return max
+        ret
+pasTropGrand:
+        movq    %rdi, %rax      # return x
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 5, "%rsi": 0, "%rdx": 10 }, attendu: { "%rax": 5 } },
+          { entrees: { "%rdi": -7, "%rsi": 0, "%rdx": 10 }, attendu: { "%rax": 0 } },
+          { entrees: { "%rdi": 42, "%rsi": 0, "%rdx": 10 }, attendu: { "%rax": 10 } },
+          { entrees: { "%rdi": -50, "%rsi": -100, "%rdx": -20 }, attendu: { "%rax": -50 } },
+          { entrees: { "%rdi": 10, "%rsi": 0, "%rdx": 10 }, attendu: { "%rax": 10 } }
+        ]
+      },
+      {
+        type: "code",
+        langage: "asm",
+        id: "trad-fonctions-appel",
+        titre: "Deux fonctions",
+        description: "Une fonction qui en appelle une autre deux fois.",
+        cours: "Traduire chaque fonction séparément. Dans l'appelante, tout ce qui doit survivre à un `call` est sauvegardé : sur la pile, ou dans un registre callee-save empilé au début.",
+        exemple: {
+          legende: "long f(long a, long b) { return g(a) + b; }",
+          code: `f:
+        pushq   %rbx
+        movq    %rsi, %rbx      # b survit à g
+        call    g               # a est déjà dans rdi
+        addq    %rbx, %rax
+        popq    %rbx
+        ret`
+        },
+        consigne: "Traduire ces deux fonctions en assembleur. Les tests appellent `dist2`.",
+        aTraduire: {
+          legende: "C",
+          code: `long carre(long x)
+{
+    return x * x;
+}
+
+long dist2(long xa, long ya, long xb, long yb)
+{
+    return carre(xb - xa) + carre(yb - ya);
+}`
+        },
+        fonction: "dist2",
+        depart: `        .section ".text"
+carre:
+        # traduction de carre
+
+dist2:
+        # traduction de dist2
+        ret
+`,
+        solution: `        .section ".text"
+carre:
+        movq    %rdi, %rax
+        imulq   %rdi, %rax      # return x * x
+        ret
+
+dist2:
+        pushq   %rbx
+        pushq   %r12
+        movq    %rcx, %r12
+        subq    %rsi, %r12      # r12 = yb - ya, survit au 1er appel
+        subq    %rdi, %rdx
+        movq    %rdx, %rdi
+        call    carre           # rax = carre(xb - xa)
+        movq    %rax, %rbx
+        movq    %r12, %rdi
+        call    carre           # rax = carre(yb - ya)
+        addq    %rbx, %rax
+        popq    %r12
+        popq    %rbx
+        ret
+`,
+        tests: [
+          { entrees: { "%rdi": 0, "%rsi": 0, "%rdx": 3, "%rcx": 4 }, attendu: { "%rax": 25 } },
+          { entrees: { "%rdi": 1, "%rsi": 1, "%rdx": 1, "%rcx": 1 }, attendu: { "%rax": 0 } },
+          { entrees: { "%rdi": -2, "%rsi": 5, "%rdx": 4, "%rcx": -3 }, attendu: { "%rax": 100 } },
+          { entrees: { "%rdi": 10, "%rsi": 0, "%rdx": 0, "%rcx": 1 }, attendu: { "%rax": 101 } }
+        ],
+        motifs: [{ motif: "call\\s+carre\\b[\\s\\S]*call\\s+carre\\b", message: "dist2 doit appeler carre deux fois", regle: "Deux `call carre`." }]
       }
     ]
   },
@@ -3973,6 +4958,182 @@ r.aire = r.aire + r.bordure;
           { entrees: { "r.largeur": 4, "r.hauteur": 5, "r.bordure": 2 }, attendu: { "r.aire": 22 } },
           { entrees: { "r.largeur": 10, "r.hauteur": 10, "r.bordure": 0 }, attendu: { "r.aire": 100 } },
           { entrees: { "r.largeur": 3, "r.hauteur": -2, "r.bordure": 255 }, attendu: { "r.aire": 249 } }
+        ]
+      },
+      {
+        type: "qcm",
+        id: "retro-qcm-fonctions",
+        melangerChoix: true,
+        titre: "QCM — Retrouver une fonction C",
+        description: "Registres lus, taille et valeur de retour → prototype et corps.",
+        cours: [
+          "Pour retrouver une fonction C :",
+          [
+            "les registres d'arguments **lus** avant d'être écrits donnent le nombre de paramètres (`%rdi`, `%rsi`, `%rdx`… dans l'ordre)",
+            "leur taille donne le type : `%rdi` → `long`, `%edi` → `int`, `%dil` → `char`",
+            "ce qui reste dans `%rax` / `%eax` au `ret` est la valeur renvoyée ; rien d'utile → `void`",
+            "`8(%rsp)` lu à l'entrée → 7ᵉ paramètre"
+          ]
+        ],
+        exemple: {
+          legende: "Assembleur  →  long f(long a, long b) { return b - a; }",
+          code: `f:
+        movq    %rsi, %rax      # rax = b
+        subq    %rdi, %rax      # rax = b - a
+        ret`
+        },
+        questions: [
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `f:
+        movl    %edi, %eax
+        imull   %esi, %eax
+        ret`,
+            choix: [
+              "int f(int a, int b) { return a * b; }",
+              "long f(long a, long b) { return a * b; }",
+              "int f(int a) { return a * a; }",
+              "void f(int a, int b) { a = a * b; }"
+            ],
+            reponse: 0,
+            explication: "%edi et %esi : deux int ; le produit reste dans %eax."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `g:
+        movq    %rdx, %rax
+        subq    %rdi, %rax
+        ret`,
+            choix: [
+              "long g(long a, long b, long c) { return c - a; }",
+              "long g(long a, long b) { return b - a; }",
+              "long g(long a, long c) { return c - a; }",
+              "long g(long a, long b, long c) { return a - c; }"
+            ],
+            reponse: 0,
+            explication: "%rdx est le 3ᵉ argument : il y a donc au moins trois paramètres, même si le 2ᵉ n'est pas utilisé."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `h:
+        movq    8(%rsp), %rax
+        addq    %r9, %rax
+        ret`,
+            choix: [
+              "long h(long a, long b, long c, long d, long e, long f, long g) { return f + g; }",
+              "long h(long a, long f) { return a + f; }",
+              "long h(long a, long b, long c, long d, long e, long f) { return e + f; }",
+              "long h(long g, long f) { return f + g; }"
+            ],
+            reponse: 0,
+            explication: "%r9 est le 6ᵉ argument, 8(%rsp) le 7ᵉ."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `k:
+        movq    %rdi, %rax
+        cqto
+        idivq   %rsi
+        movq    %rdx, %rax
+        ret`,
+            choix: [
+              "long k(long a, long b) { return a % b; }",
+              "long k(long a, long b) { return a / b; }",
+              "long k(long a, long b, long c) { return c; }",
+              "int k(int a, int b) { return a % b; }"
+            ],
+            reponse: 0,
+            explication: "idivq range le reste dans %rdx, qui est recopié dans %rax."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `m:
+        cmpq    %rsi, %rdi
+        jge     fin
+        movq    %rsi, %rdi
+fin:
+        movq    %rdi, %rax
+        ret`,
+            choix: [
+              "long m(long a, long b) { if (a < b) a = b; return a; }",
+              "long m(long a, long b) { if (a >= b) a = b; return a; }",
+              "long m(long a, long b) { if (a < b) b = a; return b; }",
+              "long m(long a, long b) { return a - b; }"
+            ],
+            reponse: 0,
+            explication: "jge saute le movq si a >= b : la condition C est l'inverse, a < b. C'est le maximum."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `p:
+        movq    %rdi, compteur
+        ret`,
+            choix: [
+              "void p(long v) { compteur = v; }",
+              "long p(long v) { return compteur; }",
+              "long p(void) { return compteur; }",
+              "void p(void) { compteur = 0; }"
+            ],
+            reponse: 0,
+            explication: "Rien n'est rangé dans %rax : la fonction ne renvoie rien d'utile, elle est void."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `q:
+        pushq   %rbx
+        movq    %rsi, %rbx
+        call    labs
+        addq    %rbx, %rax
+        popq    %rbx
+        ret`,
+            choix: [
+              "long q(long a, long b) { return labs(a) + b; }",
+              "long q(long a, long b) { return labs(b) + a; }",
+              "long q(long a, long b) { return labs(a + b); }",
+              "long q(long b) { return labs(b) + b; }"
+            ],
+            reponse: 0,
+            explication: "labs reçoit %rdi (a) ; b est mis à l'abri dans %rbx puis ajouté au résultat."
+          },
+          {
+            enonce: "Quelle fonction C correspond à ce code ?",
+            code: `r:
+        movsbl  %dil, %eax
+        subl    $48, %eax
+        ret`,
+            choix: [
+              "int r(char c) { return c - '0'; }",
+              "int r(int c) { return c - 48; }",
+              "char r(char c) { return c + '0'; }",
+              "long r(long c) { return c - 48; }"
+            ],
+            reponse: 0,
+            explication: "%dil est l'octet bas de %rdi : le paramètre est un char, étendu avec son signe puis diminué de 48 (code de '0')."
+          },
+          {
+            enonce: "Que calcule cette fonction ?",
+            code: `s:
+        cmpq    $0, %rdi
+        jg      rec
+        movq    $0, %rax
+        ret
+rec:
+        pushq   %rbx
+        movq    %rdi, %rbx
+        decq    %rdi
+        call    s
+        addq    %rbx, %rax
+        popq    %rbx
+        ret`,
+            choix: [
+              "long s(long n) { if (n <= 0) return 0; return n + s(n - 1); }",
+              "long s(long n) { if (n <= 0) return 0; return n * s(n - 1); }",
+              "long s(long n) { if (n > 0) return 0; return n + s(n - 1); }",
+              "long s(long n) { return n - 1; }"
+            ],
+            reponse: 0,
+            explication: "Cas de base n <= 0 → 0 ; sinon n (gardé dans %rbx) + s(n - 1) : la somme 1 + 2 + … + n."
+          }
         ]
       }
     ]

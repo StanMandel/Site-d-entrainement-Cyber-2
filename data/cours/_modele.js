@@ -154,8 +154,18 @@
      exclure: [{ motif: "regex", message: "…", regle: "…" }],
      aplati: true,                    // C uniquement : if (…) goto, goto, étiquettes
      sections: { msg: "rodata" },     // assembleur : section attendue d'une étiquette
-     nonSigne: ["n"]                  // clés affichées en non signé
+     nonSigne: ["n"],                 // clés affichées en non signé
+     fonction: "absadd"               // assembleur : les tests appellent cette étiquette
    }
+
+   Mode « fonction » (assembleur) : chaque test démarre à l'étiquette
+   indiquée au lieu de main. Arguments : { "%rdi": 3, "%rsi": -4 },
+   et pile: [g, h] pour les arguments 7, 8… (à 8(%rsp), 16(%rsp) à
+   l'entrée). Résultat : { "%rax": 7 }. La fonction doit se terminer
+   par ret et rendre %rbx %rbp %r12-%r15 intacts (ligne ajoutée au
+   bilan du test). « call labs » et « call abs » appellent une fonction
+   de bibliothèque qui écrase %rdi %rsi %rdx %rcx %r8-%r11 et les
+   64 octets sous %rsp, comme une vraie fonction.
 
    Clés des tests
      Assembleur : "%eax", "x" (taille de sa directive), "t[2]", "s+4",
