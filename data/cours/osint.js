@@ -4,9 +4,11 @@
    Contenu bâti sur le cours « OSINT — Bachelor 2 Cyber, EPITA »
    (C. A. Bouteba) et sur le ticket de phishing étudié en oral.
 
-   Chapitre 1 : quatre QCM courts qui résument tout le cours
-   théorique. Les chapitres 2 et 3 (enquêtes pratiques, type
-   « enquete ») sont ajoutés par osint-exercices.js.
+   Un guide des meilleures sources. Chapitre 1 : quatre QCM courts
+   qui résument tout le cours théorique. Les chapitres 2 et 3
+   (enquêtes pratiques, type « enquete ») sont ajoutés par
+   osint-exercices.js, le chapitre 4 (QCM de révision) par
+   osint-revision.js.
 
    Structure et exemples complets : voir data/cours/_modele.js
    ============================================================= */
@@ -329,6 +331,126 @@
     ]
   };
 
-  CONTENU["osint"] = { chapitres: [ch1] };
+  /* Guide : les meilleures sources, ce qu'on y trouve, comment s'en servir. */
+  const guideSources = {
+    id: "sources",
+    titre: "Les meilleures sources de l'OSINT",
+    resume: "Où chercher selon ce que vous avez en main : un nom, un pseudo, une adresse, une entreprise, un domaine, une image ou un lieu.",
+    duree: "10 min",
+    sections: [
+      {
+        type: "notion",
+        titre: "Partir d'un sélecteur",
+        texte: "Tout point de départ (nom, pseudo, courriel, téléphone, domaine, IP, image, lieu) est un **sélecteur**. Chaque résultat en donne un nouveau : on **pivote** de source en source.",
+        points: [
+          "**OSINT Framework** (osintframework.com) : l'annuaire des outils, classés par type de sélecteur.",
+          "Travaillez avec un **compte de recherche dédié**, jamais votre compte personnel.",
+          "**Capturez** chaque trouvaille (capture d'écran datée, archive) : une page peut disparaître demain."
+        ]
+      },
+      {
+        titre: "Moteurs de recherche et archives",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["Google, Bing", "Pages, documents, fichiers oubliés", "Opérateurs `site:`, `filetype:`, `inurl:`, `intitle:`, `\"…\"`, `-` ; dorks éprouvés dans la **GHDB** (exploit-db.com)"],
+            ["Yandex", "Résultats russes et d'Europe de l'Est, excellent en images", "Seconde opinion quand Google ne donne rien"],
+            ["Wayback Machine", "Pages anciennes ou supprimées, depuis 1996", "`web.archive.org/web/2015/https://site` ; l'API `cdx` liste toutes les captures"],
+            ["archive.today", "Captures à la demande, y compris de réseaux sociaux", "Archivez vous-même une page avant qu'elle ne change"]
+          ]
+        }
+      },
+      {
+        titre: "Personnes et identifiants",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["WhatsMyName, Sherlock", "Les sites où un pseudo existe", "Saisissez le pseudo : des centaines de sites testés d'un coup"],
+            ["Hunter", "Le format des adresses d'une entreprise", "Le domaine donne `prenom.nom@…` : on reconstruit les adresses des employés"],
+            ["Epieos", "Les services liés à une adresse ou un numéro", "Saisissez le courriel : comptes Google, avis, calendriers publics"],
+            ["Pages blanches, annuaires", "Adresse et téléphone fixe", "Recherche par nom et commune"]
+          ]
+        }
+      },
+      {
+        titre: "Réseaux sociaux",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["LinkedIn", "Employés, postes, organigramme, technologies dans les offres d'emploi", "Page entreprise > Personnes ; filtrez par service"],
+            ["X (Twitter)", "Messages datés, abonnements, réactions à chaud", "Recherche avancée : `from:compte since:2024-01-01 until:2024-02-01`"],
+            ["Instagram, Facebook, TikTok", "Photos de lieux, entourage, habitudes", "Lisez les commentaires et les identifications, pas seulement les publications"],
+            ["Strava", "Parcours sportifs, donc domicile et trajets", "Le point de départ récurrent d'un parcours trahit souvent l'adresse"]
+          ]
+        }
+      },
+      {
+        titre: "Entreprises",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["Annuaire des entreprises (data.gouv.fr)", "SIREN, établissements, dirigeants, source officielle et gratuite", "Recherche par nom, dirigeant ou adresse"],
+            ["Pappers, societe.com", "Comptes annuels, statuts, liens entre sociétés et dirigeants", "Partez d'un dirigeant pour voir toutes ses sociétés"],
+            ["BODACC", "Annonces légales : création, vente, liquidation", "Retracer l'histoire d'une société"],
+            ["Journal officiel des associations", "Création, objet et siège des associations", "Recherche par nom ou par ville"],
+            ["OpenCorporates", "Registres de sociétés du monde entier", "Pour une filiale ou un dirigeant à l'étranger"]
+          ]
+        }
+      },
+      {
+        titre: "Domaines et infrastructures",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["WHOIS / RDAP", "Registrar, dates de création, titulaire (si organisation)", "`whois site.fr`, lookup.icann.org, rdap.nic.fr pour un .fr"],
+            ["DNS (`dig`, DNSDumpster)", "Hébergeur, messagerie, outils SaaS déclarés dans les `TXT`", "`dig site.fr MX +short`, `dig site.fr TXT +short`"],
+            ["crt.sh", "Tous les sous-domaines qui ont eu un certificat", "`crt.sh/?q=%25.site.fr`"],
+            ["Shodan, Censys", "Machines exposées sur Internet : ports, bannières, versions", "Recherche par IP, domaine ou `org:\"Nom\"`, sans toucher la cible"],
+            ["SecurityTrails, VirusTotal", "Historique DNS : les anciennes IP d'un domaine", "Retrouver le serveur d'origine caché derrière un CDN"]
+          ]
+        }
+      },
+      {
+        titre: "Images et lieux",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["`exiftool`, Jeffrey's Image Metadata Viewer", "Appareil, date, GPS, auteur, vignette", "À lancer en premier sur tout fichier d'origine"],
+            ["Google Lens, Yandex, Bing, TinEye", "Images semblables, monuments, première apparition", "Recadrez sur l'élément unique avant de chercher"],
+            ["Street View, Panoramax, Mapillary", "Vues au sol, avec historique des dates", "Alignez deux éléments fixes pour confirmer le lieu"],
+            ["Google Earth Pro", "Images satellite anciennes", "Curseur temporel : voir un site avant et après des travaux"],
+            ["Overpass Turbo", "Tous les lieux qui combinent plusieurs éléments", "Requête sur les étiquettes OpenStreetMap (`shop=bakery`…)"],
+            ["SunCalc", "Position du soleil à une date et un lieu", "Comparez la direction des ombres pour estimer l'heure"],
+            ["Géoportail, cadastre.gouv.fr", "Cartes IGN, photos aériennes, parcelles", "Identifier une parcelle ou un bâtiment précis"]
+          ]
+        }
+      },
+      {
+        titre: "Fuites et code",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["Have I Been Pwned", "Les fuites où figure une adresse", "Saisissez le courriel ; le domaine entier pour une organisation qui le possède"],
+            ["DeHashed, Intelligence X", "Contenu des fuites : pseudos, IP, mots de passe hachés", "Pivoter d'une adresse vers d'autres identifiants"],
+            ["GitHub, GitLab", "Code publié, secrets oubliés, adresses des auteurs", "Recherche de code `\"site.fr\" password` ; ajoutez `.patch` à l'URL d'un commit pour lire l'adresse de l'auteur"]
+          ]
+        }
+      },
+      {
+        titre: "Transports",
+        tableau: {
+          entetes: ["Source", "Ce qu'on y trouve", "Comment s'en servir"],
+          lignes: [
+            ["Flightradar24, ADS-B Exchange", "Positions et historiques des avions", "Recherche par immatriculation de l'appareil"],
+            ["MarineTraffic", "Positions et escales des navires", "Recherche par nom ou numéro IMO"],
+            ["Sites de pièces auto", "Modèle et date de mise en circulation d'une plaque", "Saisissez la plaque, comparez avec le véhicule photographié"]
+          ]
+        },
+        attention: "Restez sur les sources **blanches** et **sans interaction** avec la cible : pas de demande d'ami, pas de connexion à un compte qui n'est pas le vôtre, pas d'achat de bases volées."
+      }
+    ]
+  };
+
+  CONTENU["osint"] = { guides: [guideSources], chapitres: [ch1] };
 
 })();
