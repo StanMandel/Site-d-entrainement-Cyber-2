@@ -12,7 +12,7 @@ que de déplacer le fichier.
 ```
 Lancer le site.bat          ouvre le site dans le navigateur par défaut
 index.html                  page unique (onglets + routage)
-assets/css/style.css        thème clair et coloré
+assets/css/style.css        design « cahier à intercalaires » et ses trois thèmes
 assets/js/utils.js          outils communs (DOM, texte, progression)
 assets/js/qcm.js            moteur de QCM
 assets/js/jetpunk.js        moteur du jeu de rapidité
@@ -503,8 +503,10 @@ ne dépasse pas la taille de sa banque.
 - Le bouton ⚙ en bas à droite de l'écran ouvre les paramètres : le thème
   (**Clair**, **Sombre**, **Bon pour les yeux**) est retenu dans le `localStorage`
   sous la clé `epita-theme` et appliqué avant le premier affichage. Chaque thème ne
-  redéfinit que les jetons de couleur en haut de `assets/css/style.css` : une
-  couleur écrite en dur dans une règle ne suivrait pas le thème. Pour un fond teinté
+  redéfinit que les jetons de couleur en haut de `assets/css/style.css`, sur
+  `:root[data-theme=…]` et sur `.theme-apercu.<thème>` (la miniature du panneau
+  Paramètres utilise les mêmes jetons) : une couleur écrite en dur dans une règle
+  ne suivrait pas le thème. Pour un fond teinté
   ou un texte assombri, utiliser `color-mix(… var(--teinte))` et
   `color-mix(… var(--ombrage))`, qui valent « blanc » et « noir » en thème clair.
 - `data/cours/_modele.js` n'est pas chargé par le site : c'est une simple référence

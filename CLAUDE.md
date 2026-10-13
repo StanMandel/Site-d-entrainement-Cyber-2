@@ -114,12 +114,21 @@ de code dans `code.js`).
 - Exercices de programmation : principe très court, exemple, objectif ; courts, un
   mécanisme chacun, difficulté croissante ; plusieurs tests d'entrées différentes pour
   empêcher les valeurs codées en dur ; les traductions C ↔ assembleur en fin de parcours.
-- Design : coloré, angles carrés (variables `--r-s/m/l/xl`), et **aucun texte méta**
-  dans l'interface (pas d'explication du fonctionnement du site). Trois thèmes au
-  choix (⚙ en bas à droite) : clair par défaut, sombre, « bon pour les yeux ». Chacun
-  ne redéfinit que les jetons de couleur en tête de `style.css` ; n'écrivez pas de
-  couleur en dur dans une règle, servez-vous de `var(--teinte)` et `var(--ombrage)`
-  dans les `color-mix` (le « blanc » et le « noir » du thème courant).
+- Design « cahier à intercalaires » : fond quadrillé, cartes carrées (rayons `--r-*`
+  à 0) à bord d'encre `--trait`, bandeau et onglet de la couleur de la matière, ombre
+  franche décalée au survol (`--ombre-dure` ou la couleur de la matière), surligneur
+  `--surligneur` pour ce qui est actif. Polices : Bricolage Grotesque (`--titre`),
+  Atkinson Hyperlegible Next (`--police`), JetBrains Mono (`--mono`, aussi pour les
+  petites étiquettes en capitales). **Aucun texte méta** dans l'interface (pas
+  d'explication du fonctionnement du site).
+- Thèmes (⚙ en bas à droite) : clair par défaut, sombre, « bon pour les yeux ». Chacun
+  ne redéfinit que les jetons en tête de `style.css`, sur `:root[data-theme=…]` **et**
+  `.theme-apercu.<thème>` (les miniatures du panneau Paramètres se dessinent avec ces
+  jetons : un nouveau thème = un bloc de jetons + une entrée dans `Theme.LISTE`).
+  N'écrivez pas de couleur en dur dans une règle : jetons (`--h-*` pour les teintes de
+  type, `--code-*` / `--tk-*` pour le code), et `var(--teinte)` / `var(--ombrage)` dans
+  les `color-mix` (le « blanc » et le « noir » du thème courant). Les règles de matière
+  posent `--c: var(--c-matiere)` (couleur `--tc` adoucie selon `--attenue`).
 - Interface au vouvoiement.
 - Énumérations : liste à pastilles (tableau imbriqué dans `cours`/`consigne`), jamais
   d'éléments séparés par « · » au milieu d'une phrase.

@@ -61,10 +61,16 @@ const App = {
         class: "theme-choix", type: "button",
         onclick: () => marquer(Theme.appliquer(theme.id))
       },
-        el("span", { class: "theme-apercu " + theme.id },
-          el("i", {}), el("i", {}), el("i", {})
+        /* Miniature dessinée avec les jetons du thème (voir style.css) */
+        el("span", { class: "theme-apercu " + theme.id, "aria-hidden": "true" },
+          el("span", { class: "ta-carte" },
+            el("i", { class: "ta-onglet" }),
+            el("i", { class: "ta-ligne" }),
+            el("i", { class: "ta-ligne courte" }),
+            el("i", { class: "ta-surligne" })
+          )
         ),
-        theme.nom
+        el("span", { class: "theme-nom", texte: theme.nom })
       );
       choix[theme.id] = bouton;
       themes.append(bouton);
@@ -321,7 +327,10 @@ const App = {
       style: { "--tc": cours.couleur },
       onclick: () => this.aller("#/c/" + cours.slug)
     },
-      el("div", { class: "carte-icone", texte: cours.emoji }),
+      el("div", { class: "carte-onglet" },
+        el("span", { class: "carte-icone", texte: cours.emoji }),
+        cours.court ? el("span", { class: "carte-court", texte: cours.court }) : null
+      ),
       el("h3", { texte: cours.nom }),
       el("p", { class: "desc", texte: cours.description || "" }),
       pied
@@ -418,7 +427,7 @@ const App = {
     const corps = el("div", { class: "chapitre-corps" });
 
     if (exos.length === 0) {
-      corps.append(el("p", { class: "desc", texte: "Aucun exercice dans ce chapitre pour l'instant.", style: { color: "var(--texte-pale)", fontSize: ".88rem" } }));
+      corps.append(el("p", { class: "chapitre-vide", texte: "Aucun exercice dans ce chapitre pour l'instant." }));
     } else {
       const grille = el("div", { class: "liste-exos" });
       exos.forEach((exo, j) => grille.append(this._carteExo(cours, exo, (i + 1) + "." + (j + 1))));
@@ -668,7 +677,7 @@ const App = {
       if (i > 0) fil.append(el("span", { texte: "›" }));
       fil.append(lien
         ? el("a", { onclick: () => this.aller(lien), texte: libelle })
-        : el("span", { texte: libelle, style: { color: "var(--texte-doux)", fontWeight: "650" } })
+        : el("span", { class: "fil-ici", texte: libelle })
       );
     });
     return fil;
